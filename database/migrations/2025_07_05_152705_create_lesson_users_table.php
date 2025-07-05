@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('lesson_users', function (Blueprint $table) {
-            $table->foreignId('lesson_id')->constrained('lessons', 'lesson_id')->onDelete('cascade');
+            $table->foreignId('lesson_id')->constrained('lessons', 'id')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->boolean('attended')->default(true);
             $table->foreignId('added_by_user_id')->nullable()->constrained('users', 'id')->onDelete('set null')->comment('Operator/admin/client that added the client');

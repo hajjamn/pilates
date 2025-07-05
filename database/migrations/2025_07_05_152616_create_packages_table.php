@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('packages', function (Blueprint $table) {
-            $table->id('package_id');
+            $table->id('id');
             $table->string('name');
             $table->unsignedInteger('total_lessons');
             $table->decimal('price', 6, 2);

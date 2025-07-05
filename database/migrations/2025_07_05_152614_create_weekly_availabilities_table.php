@@ -11,11 +11,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('weekly_availabilities', function (Blueprint $table) {
-            $table->id('weekly_availability_id');
+            $table->id('id');
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade')->comment('Operator');
             $table->unsignedTinyInteger('day_of_week')->comment('0=Monday, 6=Sunday');
             $table->time('start_time');
-            $table->foreignId('room_id')->constrained('rooms', 'room_id')->onDelete('cascade');
+            $table->foreignId('room_id')->constrained('rooms', 'id')->onDelete('cascade');
             $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();

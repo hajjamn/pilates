@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('lessons', function (Blueprint $table) {
-            $table->id('lesson_id');
-            $table->foreignId('room_id')->constrained('rooms', 'room_id')->onDelete('cascade');
+            $table->id('id');
+            $table->foreignId('room_id')->constrained('rooms', 'id')->onDelete('cascade');
             $table->foreignId('operator_id')->constrained('users', 'id')->onDelete('cascade');
             $table->dateTime('starts_at');
             $table->unsignedTinyInteger('max_clients')->default(7); // TODO: consider adding to rooms, users or weekly_availabilities

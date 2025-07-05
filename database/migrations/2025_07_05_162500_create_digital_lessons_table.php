@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('digital_lessons', function (Blueprint $table) {
-            $table->id('digital_lesson_id');
+            $table->id('id');
             $table->string('title');
             $table->string('youtube_url');
             $table->decimal('price', 6, 2)->default(0.00);

@@ -11,9 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('machines', function (Blueprint $table) {
-            $table->id('machine_id');
+            $table->id('id');
             $table->string('name');
-            $table->foreignId('room_id')->constrained('rooms', 'room_id');
+            $table->foreignId('room_id')->constrained('rooms', 'id');
             $table->text('description')->nullable();
             $table->softDeletes();
         });

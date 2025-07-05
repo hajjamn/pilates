@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('digital_lesson_users', function (Blueprint $table) {
-            $table->foreignId('digital_lesson_id')->constrained('digital_lessons', 'digital_lesson_id')->onDelete('cascade');
+            $table->foreignId('digital_lesson_id')->constrained('digital_lessons', 'id')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->timestamp('unlocked_at')->useCurrent();
             $table->softDeletes();

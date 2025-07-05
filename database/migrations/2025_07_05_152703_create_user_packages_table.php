@@ -11,9 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('user_packages', function (Blueprint $table) {
-            $table->id('user_package_id');
+            $table->id('id');
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
-            $table->foreignId('package_id')->constrained('packages', 'package_id')->onDelete('cascade');
+            $table->foreignId('package_id')->constrained('packages', 'id')->onDelete('cascade');
             $table->unsignedInteger('lessons_remaining');
             $table->timestamp('purchased_at')->useCurrent();
             $table->softDeletes();
