@@ -1,0 +1,48 @@
+-1
+  Run->
+  php artisan make:model Example -a
+
+-2
+  delete ExampleController in controller folder
+
+-3
+  Run->
+  php artisan make:controller Admin/ExampleController -r --model=Example
+
+-4
+  go to routes/web.php
+  In the group function after //CRUD POSTS write:
+    Route::resource('examples',ExampleController::class); //remember to press Enter to automatically import ExampleController in web.php and check for it at line 3
+
+-5
+  add fields to the migration create_examples_table
+
+-6
+  fix database in .env
+  Run->
+  php artisan migrate
+
+-7
+  go to ExampleSeeder
+  at the start write:
+    use Faker\Generator as Faker;
+  
+-8
+  then, in the public function, after run write:
+    public function run(Faker $faker): void {
+      //stuff for faker
+    }
+
+-9
+  Run->
+  php artisan db:seed --class=ExampleSeeder
+
+-10
+  create a Example folder in views/admin
+  create the view index.blade.php
+
+-11
+  Go to ExampleController and in index() write:
+            $examples = Example::all();
+
+        return view('admin.examples.index', compact('examples'));
