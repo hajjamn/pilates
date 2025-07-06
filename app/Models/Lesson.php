@@ -33,21 +33,29 @@ class Lesson extends Model
         return $this->belongsTo(User::class, 'operator_id');
     }
 
-    public function users()
+    public function lessonUsers()
     {
-        return $this->belongsToMany(User::class)
-            ->withPivot([
-                'attended',
-                'added_by_user_id',
-                'paid',
-                'paid_to_user_id',
-                'user_package_id',
-                'counted',
-                'created_at',
-                'updated_at',
-                'deleted_at'
-            ])
-            ->withTimestamps()
-            ->using(LessonUser::class);
+        return $this->hasMany(LessonUser::class);
     }
+
+    public function scopePast($query)
+    {
+        return $query->where('starts_at', '<=', now());
+    }
+
+    public function scopeFuture($query)
+    {
+        return $query->where('starts_at', '>', now());
+    }
+
+    public function scopeNotCanceled($query)
+    {
+        return $query->where('canceled', false);
+    }
+
+    public function getUsersAttribute()
+    {
+        return $this->lessonUsers->map->user;
+    }
+
 }

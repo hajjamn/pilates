@@ -11,6 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('lesson_users', function (Blueprint $table) {
+            $table->id('id');
             $table->foreignId('lesson_id')->constrained('lessons', 'id')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->boolean('attended')->default(true);
@@ -21,7 +22,6 @@ return new class extends Migration {
             $table->boolean('counted')->default(true)->comment('Indicates if lesson was deducted from user package');
             $table->timestamps();
             $table->softDeletes();
-            $table->primary(['lesson_id', 'user_id']);
         });
     }
 
