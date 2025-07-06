@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -18,9 +20,12 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
+        'phone',
+        'birth_date'
     ];
 
     /**
@@ -40,5 +45,68 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'birth_date' => 'date',
     ];
+
+    // Reserved lessons
+    public function lessons()
+    {
+        return $this->belongsToMany(Lesson::class)
+            ->withPivot([
+                'attended',
+                'added_by_user_id',
+                'paid',
+                'paid_to_user_id',
+                'user_package_id',
+                'counted',
+                'created_at',
+                'updated_at',
+                'deleted_at',
+            ])
+            ->withTimestamps()
+            ->using(LessonUser::class);
+    }
+
+    // Bought digital lessons
+    public function digitalLessons()
+    {
+        return $this->belongsToMany(DigitalLesson::class)
+            ->withPivot(['unlocked_at', 'deleted_at'])
+            ->withTimestamps()
+            ->using(DigitalLessonUser::class);
+    }
+
+    // Bought packages
+    public function packages()
+    {
+        return $this->hasMany(UserPackage::class);
+    }
+
+    // Weekly availability (only for operators)
+    public function weeklyAvailabilities()
+    {
+        return $this->hasMany(WeeklyAvailability::class);
+    }
+
+    // Operated lessons (only operators)
+    public function operatedLessons()
+    {
+        return $this->hasMany(Lesson::class, 'operator_id');
+    }
+
+    /**
+     * === Accessors / Scopes (future ideas) ===
+     */
+
+    // Esempio di accessor futuro: nome completo
+    // public function getFullNameAttribute()
+    // {
+    //     return "{$this->first_name} {$this->last_name}";
+    // }
+
+    // Scope per filtrare solo clienti
+    // public function scopeClients($query)
+    // {
+    //     return $query->role('cliente');
+    // }
 }

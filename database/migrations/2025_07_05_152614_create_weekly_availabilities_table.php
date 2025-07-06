@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('weekly_availabilities', function (Blueprint $table) {
             $table->id('id');
-            $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade')->comment('Operator');
+            $table->foreignId('operator_id')->constrained('users', 'id')->onDelete('cascade');
             $table->unsignedTinyInteger('day_of_week')->comment('0=Monday, 6=Sunday');
             $table->time('start_time');
             $table->foreignId('room_id')->constrained('rooms', 'id')->onDelete('cascade');
