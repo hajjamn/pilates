@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('digital_lessons', function (Blueprint $table) {
             $table->id('id');
             $table->string('title');
-            $table->string('youtube_url');
+            $table->string('video_url');
             $table->decimal('price', 6, 2)->default(0.00);
             $table->timestamps();
             $table->softDeletes();
