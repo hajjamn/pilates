@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained('users', 'id')->onDelete('cascade');
             $table->timestamp('unlocked_at')->useCurrent();
             $table->softDeletes();
+            $table->timestamps();
             $table->primary(['digital_lesson_id', 'user_id']);
         });
     }

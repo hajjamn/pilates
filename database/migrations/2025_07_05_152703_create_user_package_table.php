@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignId('package_id')->constrained('packages', 'id')->onDelete('cascade');
             $table->unsignedInteger('lessons_remaining');
             $table->timestamp('purchased_at')->useCurrent();
+            $table->timestamps();
             $table->softDeletes();
         });
     }

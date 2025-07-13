@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('name');
             $table->foreignId('room_id')->constrained('rooms', 'id');
             $table->text('description')->nullable();
+            $table->timestamps();
             $table->softDeletes();
         });
     }

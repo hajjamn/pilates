@@ -49,22 +49,9 @@ class User extends Authenticatable
     ];
 
     // Reserved lessons
-    public function lessons()
+    public function lessonUsers()
     {
-        return $this->belongsToMany(Lesson::class)
-            ->withPivot([
-                'attended',
-                'added_by_user_id',
-                'paid',
-                'paid_to_user_id',
-                'user_package_id',
-                'counted',
-                'created_at',
-                'updated_at',
-                'deleted_at',
-            ])
-            ->withTimestamps()
-            ->using(LessonUser::class);
+        return $this->hasMany(LessonUser::class);
     }
 
     // Bought digital lessons
@@ -92,6 +79,11 @@ class User extends Authenticatable
     public function operatedLessons()
     {
         return $this->hasMany(Lesson::class, 'operator_id');
+    }
+
+    public function getLessonsAttribute()
+    {
+        return $this->lessonUsers->map->lesson;
     }
 
     /**

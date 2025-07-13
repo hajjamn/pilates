@@ -18,10 +18,6 @@ class WeeklyAvailability extends Model
         'active'
     ];
 
-    protected $casts = [
-        'start_time' => 'time'
-    ];
-
     public function room()
     {
         return $this->belongsTo(Room::class);
