@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Le rotte sono tutte incapsulate nel prefisso "gdp-template", così da
-| poter essere raggiunte da URL come:
-| https://generazionedigitaleprogrammi.com/gdp-template/
-|
 */
 
 Route::prefix('gdp-template')->group(function () {
