@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController; //as AdminUserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,8 +40,9 @@ Route::prefix('gdp-template')->group(function () {
                 return view('admin.dashboard');
             })->name('dashboard');
 
-            // Register all other protected routes
-            // CRUD EXAMPLE: Route::resource('/users', Admin\UserController::class);
+            Route::resource('/utenti', UserController::class)
+                ->names('users')
+                ->parameters(['utenti' => 'user']);
         });
 
     //------------------------------
