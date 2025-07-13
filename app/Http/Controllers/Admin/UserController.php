@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Models\Machine;
-use App\Http\Requests\StoreMachineRequest;
-use App\Http\Requests\UpdateMachineRequest;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 
-class MachineController extends Controller
+class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -27,7 +26,7 @@ class MachineController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreMachineRequest $request)
+    public function store(Request $request)
     {
         //
     }
@@ -35,7 +34,7 @@ class MachineController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Machine $machine)
+    public function show(string $id)
     {
         //
     }
@@ -43,7 +42,7 @@ class MachineController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Machine $machine)
+    public function edit(string $id)
     {
         //
     }
@@ -51,7 +50,7 @@ class MachineController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateMachineRequest $request, Machine $machine)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -59,7 +58,7 @@ class MachineController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Machine $machine)
+    public function destroy(string $id)
     {
         //
     }
