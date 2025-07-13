@@ -11,13 +11,28 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('gdp-template')->group(function () {
 
+    //------------------------------
+    // GUEST AREA
+    //------------------------------
     Route::get('/', function () {
         return view('welcome');
     });
 
+    //------------------------------
+    // SHARED PROFILE
+    //------------------------------
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
+
+    //------------------------------
+    // ADMIN AREA
+    //------------------------------
     Route::middleware(['auth', 'verified'])
+        ->prefix('amministrazione')
         ->name('admin.')
-        ->prefix('admin')
         ->group(function () {
 
             Route::get('/', function () {
@@ -25,14 +40,32 @@ Route::prefix('gdp-template')->group(function () {
             })->name('dashboard');
 
             // Register all other protected routes
-            // CRUD EXAMPLES, etc.
+            // CRUD EXAMPLE: Route::resource('/users', Admin\UserController::class);
         });
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    });
+    //------------------------------
+    // OPERATOR AREA
+    //------------------------------
+    Route::middleware(['auth', 'verified', 'role:operatore|admin'])
+        ->prefix('operatore')
+        ->name('operator.')
+        ->group(function () {
+            Route::get('/', function () {
+                return view('operator.dashboard');
+            })->name('dashboard');
+        });
+
+    //------------------------------
+    // CLIENT AREA
+    //------------------------------
+    Route::middleware(['auth', 'verified', 'role:cliente'])
+        ->prefix('cliente')
+        ->name('client.')
+        ->group(function () {
+            Route::get('/', function () {
+                return view('client.dashboard');
+            });
+        });
 
     require __DIR__ . '/auth.php';
 });
