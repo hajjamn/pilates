@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
-
+namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class UserController extends Controller
+class OperatorController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,14 +17,14 @@ class UserController extends Controller
     {
         //dd(app()->get(\Illuminate\Contracts\Http\Kernel::class)->getMiddlewareAliases());
 
-        $this->middleware('role:admin');
+        $this->middleware('role:operatore|admin');
     }
 
     public function index()
     {
-        $users = User::all();
+        $operators = User::operators()->get();
 
-        return view('admin.users.index', compact('users'));
+        return view('operator.operators.index', compact('operators'));
     }
 
     /**
@@ -33,7 +32,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('admin.users.create');
+        return view('operator.operators.create');
     }
 
     /**
@@ -47,17 +46,17 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user)
+    public function show(User $operator)
     {
-        return view('admin.users.show', compact('user'));
+        return view('operator.operators.show', compact('operator'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user)
+    public function edit(User $operator)
     {
-        return view('admin.users.edit', compact('user'));
+        return view('operator.operators.edit', compact('operator'));
     }
 
     /**
@@ -71,9 +70,9 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(User $operator)
     {
-        $user->delete();
-        return redirect()->route('admin.users.index')->with('success', 'Utente eliminato con successo.');
+        $operator->delete();
+        return redirect()->route('operator.operators.index')->with('success', 'Operatore eliminato con successo.');
     }
 }

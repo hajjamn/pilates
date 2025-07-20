@@ -1,0 +1,25 @@
+$colors: (
+    "brand": ("brand-primary": #FFFFFF,
+        "brand-secondary": #FFFFFF,
+    ),
+
+    "other": ("whatsapp": #25D366,
+    ),
+);
+
+
+@each $group, $color-map in $colors {
+    @each $name, $value in $color-map {
+        .text-#{name} {
+            color: $value !important;
+        }
+
+        .bg-#{$name} {
+            background-color: $value !important;
+        }
+
+        .border-#{$name} {
+            border-color: $value !important;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\UserController; //as AdminUserController;
+use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,9 +40,9 @@ Route::prefix('gdp-template')->group(function () {
                 return view('admin.dashboard');
             })->name('dashboard');
 
-            Route::resource('/utenti', UserController::class)
+            /* Route::resource('/utenti', UserController::class)
                 ->names('users')
-                ->parameters(['utenti' => 'user']);
+                ->parameters(['utenti' => 'user']); */
         });
 
     //------------------------------
@@ -55,6 +55,10 @@ Route::prefix('gdp-template')->group(function () {
             Route::get('/', function () {
                 return view('operator.dashboard');
             })->name('dashboard');
+
+            Route::resource('/operatori', OperatorController::class)
+                ->names('operators')
+                ->parameters(['operatori' => 'operator']);
         });
 
     //------------------------------

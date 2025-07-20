@@ -17,7 +17,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = 'gdp-template/admin';
+    public const HOME = 'gdp-template/';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
