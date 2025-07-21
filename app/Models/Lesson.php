@@ -48,7 +48,12 @@ class Lesson extends Model
         return $query->where('starts_at', '>', now());
     }
 
-    public function scopeNotCanceled($query)
+    public function scopeCanceled($query)
+    {
+        return $query->where('canceled', true);
+    }
+
+    public function scopeActive($query)
     {
         return $query->where('canceled', false);
     }

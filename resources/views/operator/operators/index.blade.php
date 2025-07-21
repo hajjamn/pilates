@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container">
-        <h1>Lista utenti (test)</h1>
+        <h1>Lista operatori (test)</h1>
 
         <table class="table">
             <thead>
@@ -14,15 +14,15 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($operators as $operators)
+                @foreach ($operators as $operator)
                     <tr>
-                        <td><a href="{{ route('operator.operators.show', $operators) }}">{{ $operators->full_name }}</a>
+                        <td><a href="{{ route('operator.operators.show', $operator) }}">{{ $operator->full_name }}</a>
                         </td>
-                        <td><a href="mailto: {{ $operators->email }}">{{ $operators->email }}</a></td>
-                        <td><a href="https://wa.me/{{ $operators->number }}?text= Cara/o {{ $operators->full_name }}, "><i
-                                    class="fab fa-whatsapp text-whatsapp"></i>{{ $operators->phone }}</a></td>
+                        <td><a href="mailto: {{ $operator->email }}">{{ $operator->email }}</a></td>
+                        <td><a href="https://wa.me/{{ $operator->number }}?text= Cara/o {{ $operator->full_name }}, "><i
+                                    class="fab fa-whatsapp text-whatsapp"></i>{{ $operator->phone }}</a></td>
                         <td>
-                            {{ implode(', ', $operators->getRoleNames()->toArray()) }}
+                            {{ implode(', ', $operator->getRoleNames()->toArray()) }}
                         </td>
                     </tr>
                 @endforeach

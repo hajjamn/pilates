@@ -12,16 +12,13 @@ class OperatorController extends Controller
      */
 
 
-
-    public function __construct()
-    {
-        //dd(app()->get(\Illuminate\Contracts\Http\Kernel::class)->getMiddlewareAliases());
-
-        $this->middleware('role:operatore|admin');
-    }
-
     public function index()
     {
+
+        if (!auth()->user()->hasRole('admin')) {
+            abort(403, 'Accesso negato.');
+        }
+
         $operators = User::operators()->get();
 
         return view('operator.operators.index', compact('operators'));
@@ -48,7 +45,19 @@ class OperatorController extends Controller
      */
     public function show(User $operator)
     {
-        return view('operator.operators.show', compact('operator'));
+
+        $this->isSelfOrAdmin($operator);
+
+        $futureLessonsQuery = $operator->operatedLessons()->future();
+        $activeFutureLessons = $futureLessonsQuery->active()->get();
+        $canceledFutureLessons = $futureLessonsQuery->canceled()->get();
+
+        $pastLessonsQuery = $operator->operatedLessons()->past();
+        $activePastLessons = $pastLessonsQuery->active()->get();
+        $canceledPastLessons = $pastLessonsQuery->canceled()->get();
+
+        dd($activeFutureLessons);
+        return view('operator.operators.show', compact(['operator', 'lessons']));
     }
 
     /**
@@ -74,5 +83,12 @@ class OperatorController extends Controller
     {
         $operator->delete();
         return redirect()->route('operator.operators.index')->with('success', 'Operatore eliminato con successo.');
+    }
+
+    public function isSelfOrAdmin(User $user)
+    {
+        if (!auth()->user()->hasRole('admin') && auth()->id() !== $user->id) {
+            abort(403, 'Accesso negato.');
+        }
     }
 }
