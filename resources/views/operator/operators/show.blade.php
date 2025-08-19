@@ -29,5 +29,77 @@
 
         <a href="{{ route('operator.operators.index') }}" class="btn btn-secondary">Torna alla lista</a>
         <a href="{{ route('operator.operators.edit', $operator) }}" class="btn btn-primary">Modifica</a>
+
+        {{-- Riepilogo --}}
+        <div class="card my-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Lezioni operate</h5>
+
+                <div class="row g-3">
+                    @php
+                        $sections = [
+                            ['key' => ['future', 'active'], 'title' => 'Prossime • Attive'],
+                            ['key' => ['future', 'canceled'], 'title' => 'Prossime • Annullate'],
+                            ['key' => ['past', 'active'], 'title' => 'Passate • Svolte'],
+                            ['key' => ['past', 'canceled'], 'title' => 'Passate • Annullate'],
+                        ];
+                    @endphp
+
+                    @foreach ($sections as $s)
+                        @php [$when, $status] = $s['key']; @endphp
+                        <div class="col-12 col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>{{ $s['title'] }}</span>
+                                    <span class="badge bg-secondary">
+                                        {{ count($lessons[$when][$status] ?? []) }}
+                                    </span>
+                                </div>
+
+                                <ul class="list-group list-group-flush">
+                                    @forelse (($lessons[$when][$status] ?? []) as $lesson)
+                                        <li class="list-group-item">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    {{-- Sostituisci le proprietà in base al tuo modello --}}
+                                                    <div class="fw-semibold">
+                                                        {{ $lesson->title ?? 'Lezione' }}
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        {{-- esempio: orario e stanza --}}
+                                                        {{ optional($lesson->start_at)->format('d/m/Y H:i') }}
+                                                        @if (!empty($lesson->end_at))
+                                                            – {{ optional($lesson->end_at)->format('H:i') }}
+                                                        @endif
+                                                        @if (isset($lesson->room))
+                                                            · Sala: {{ $lesson->room->name }}
+                                                        @endif
+                                                        @if (isset($lesson->client))
+                                                            · Cliente: {{ $lesson->client->full_name }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                @if ($status === 'canceled')
+                                                    <span class="badge bg-danger">Annullata</span>
+                                                @elseif($when === 'future')
+                                                    <span class="badge bg-success">In arrivo</span>
+                                                @else
+                                                    <span class="badge bg-primary">Completata</span>
+                                                @endif
+                                            </div>
+                                        </li>
+                                    @empty
+                                        <li class="list-group-item text-muted fst-italic">
+                                            Nessuna lezione.
+                                        </li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
     </div>
 @endsection

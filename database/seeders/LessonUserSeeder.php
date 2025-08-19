@@ -13,7 +13,7 @@ class LessonUserSeeder extends Seeder
 {
     public function run(): void
     {
-        Lesson::past()->notCanceled()->each(function ($lesson) {
+        Lesson::past()->active()->each(function ($lesson) {
             if (rand(1, 10) === 10) {
                 $users = User::role('cliente')->inRandomOrder()->take(rand(3, 6))->get();
             } else {
@@ -50,7 +50,7 @@ class LessonUserSeeder extends Seeder
             }
         });
 
-        Lesson::future()->notCanceled()->each(function ($lesson) {
+        Lesson::future()->active()->each(function ($lesson) {
             if (rand(1, 10) <= 7) {
                 $users = User::role('cliente')->inRandomOrder()->take(rand(3, 6))->get();
             } else {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
 
 class OperatorController extends Controller
 {
@@ -56,7 +57,17 @@ class OperatorController extends Controller
         $activePastLessons = $pastLessonsQuery->active()->get();
         $canceledPastLessons = $pastLessonsQuery->canceled()->get();
 
-        dd($activeFutureLessons);
+        $lessons = [
+            'future' => [
+                'active' => $activeFutureLessons,
+                'canceled' => $canceledFutureLessons,
+            ],
+            'past' => [
+                'active' => $activePastLessons,
+                'canceled' => $canceledPastLessons,
+            ],
+        ];
+
         return view('operator.operators.show', compact(['operator', 'lessons']));
     }
 
@@ -65,7 +76,13 @@ class OperatorController extends Controller
      */
     public function edit(User $operator)
     {
-        return view('operator.operators.edit', compact('operator'));
+        $this->isSelfOrAdmin($operator);
+
+        $roles = auth()->user()->hasRole('admin')
+            ? Role::all()
+            : collect();
+
+        return view('operator.operators.edit', compact('operator', 'roles'));
     }
 
     /**
