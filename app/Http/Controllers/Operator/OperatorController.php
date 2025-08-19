@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Operator\StoreOperatorRequest;
 use App\Http\Requests\Operator\UpdateOperatorRequest;
 use App\Models\User;
 use Carbon\Carbon;
@@ -32,15 +33,34 @@ class OperatorController extends Controller
      */
     public function create()
     {
+        if (!auth()->user()->hasRole('admin')) {
+            abort(403, 'Accesso negato.');
+        }
+
         return view('operator.operators.create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreOperatorRequest $request)
     {
-        //
+        $data = $request->validated();
+
+        $operator = User::create([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'birth_date' => $data['birth_date'] ?? null,
+            'password' => bcrypt($data['password']),
+        ]);
+
+        $operator->assignRole('operatore');
+
+        return redirect()
+            ->route('operator.operators.show', $operator)
+            ->with('status', 'Operatore creato con successo.');
     }
 
     /**

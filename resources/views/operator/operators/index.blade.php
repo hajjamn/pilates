@@ -2,7 +2,26 @@
 
 @section('content')
     <div class="container">
-        <h1>Lista operatori (test)</h1>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1>Operatori</h1>
+
+            @if (auth()->user()->hasRole('admin'))
+                <a href="{{ route('operator.operators.create') }}" class="btn btn-primary">
+                    + Crea nuovo operatore
+                </a>
+            @endif
+        </div>
+
+        @if ($operators->isEmpty())
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span>Nessun operatore presente.</span>
+                @if (auth()->user()->hasRole('admin'))
+                    <a href="{{ route('operator.operators.create') }}" class="btn btn-sm btn-outline-primary">
+                        Crea il primo
+                    </a>
+                @endif
+            </div>
+        @endif
 
         <table class="table">
             <thead>
