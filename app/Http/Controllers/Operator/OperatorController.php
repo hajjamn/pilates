@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Operator\UpdateOperatorRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
@@ -88,9 +90,29 @@ class OperatorController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateOperatorRequest $request, User $operator)
     {
-        //
+        $data = $request->validated();
+
+        $data['birth_date'] = !empty($data['birth_date'])
+            ? Carbon::parse($data['birth_date'])
+            : null;
+
+        $operator->fill([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'birth_date' => $data['birth_date'],
+        ])->save();
+
+        if ($request->has('roles')) {
+            $validRoleNames = Role::pluck('name')->toArray();
+            $rolesToSync = array_intersect($request->input('roles', []), $validRoleNames);
+            $operator->syncRoles($rolesToSync);
+        }
+
+        return redirect()->route('operator.operators.show', $operator)->with('status', 'Operatore aggiornato con successo.');
     }
 
     /**
