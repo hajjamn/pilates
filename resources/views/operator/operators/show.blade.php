@@ -27,7 +27,9 @@
             </div>
         </div>
 
-        <a href="{{ route('operator.operators.index') }}" class="btn btn-secondary">Torna alla lista</a>
+        @if (auth()->user()->hasRole('admin'))
+            <a href="{{ route('operator.operators.index') }}" class="btn btn-secondary">Torna alla lista</a>
+        @endif
         <a href="{{ route('operator.operators.edit', $operator) }}" class="btn btn-primary">Modifica</a>
 
         {{-- Riepilogo --}}
