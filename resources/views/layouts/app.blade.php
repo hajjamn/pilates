@@ -44,6 +44,20 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url('/') }}">{{ __('Home') }}</a>
                         </li>
+                        @role('admin')
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('operator.operators.index') }}">
+                                    Gestione Operatori
+                                </a>
+                            </li>
+                        @endrole
+                        @role('operatore')
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('operator.operators.show', auth()->id()) }}">
+                                    Panoramica Operatore
+                                </a>
+                            </li>
+                        @endrole
                     </ul>
 
                     <!-- Right Side Of Navbar -->

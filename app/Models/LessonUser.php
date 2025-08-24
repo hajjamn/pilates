@@ -48,4 +48,6 @@ class LessonUser extends Model
     {
         return $this->belongsTo(UserPackage::class, 'user_package_id');
     }
+
+
 }
