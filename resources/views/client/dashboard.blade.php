@@ -1,14 +1,8 @@
 @extends('layouts.app')
+@section('page-title', 'Homepage')
 
 @section('content')
     <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <div>
-                <h1 class="h3 mb-1">Homepage</h1>
-                <div class="text-muted">Lezioni rimaste: —</div>
-            </div>
-            <div class="btn btn-outline-secondary disabled">Menu</div>
-        </div>
 
         <h2 class="h4">Calendario Prenotazioni</h2>
         <div class="d-grid gap-2 my-3" style="max-width:520px;">

@@ -87,6 +87,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return "{$this->first_name} {$this->last_name}";
     }
 
+    public function getRemainingPackageLessonsAttribute(): int
+    {
+        return (int) $this->packages()
+            ->active()
+            ->sum('lessons_remaining');
+    }
+
     public function scopeClients($query)
     {
         return $query->role('cliente');
