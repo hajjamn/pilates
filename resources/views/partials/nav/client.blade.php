@@ -1,30 +1,41 @@
-<nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="{{ route('client.dashboard') }}">
-            <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="Logo" style="height: 40px;">
-        </a>
+<nav class="navbar bg-white shadow-sm border-bottom">
+    <div class="container py-2 w-100">
+        <div class="row align-items-center w-100">
+            {{-- SX: Logo -> dashboard --}}
+            <div class="col-4 col-md-3">
+                <a class="navbar-brand d-inline-flex align-items-center" href="{{ route('client.dashboard') }}">
+                    <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="Logo" style="height: 40px;">
+                </a>
+            </div>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navClient"
-            aria-controls="navClient" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            {{-- CENTRO: Titolo pagina + lezioni rimaste --}}
+            <div class="col-4 col-md-6 text-center">
+                <div class="lh-sm">
+                    <div class="fw-semibold">
+                        @yield('page-title', 'Homepage')
+                    </div>
+                    <div class="text-muted small">
+                        Lezioni rimaste:
+                        {{ auth()->user()->remaining_package_lessons ?? '—' }}
+                    </div>
+                </div>
+            </div>
 
-        <div class="collapse navbar-collapse" id="navClient">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('client.dashboard') }}">Homepage</a></li>
-                <li class="nav-item"><a class="nav-link disabled" href="#">Calendario</a></li>
-                <li class="nav-item"><a class="nav-link disabled" href="#">Prenotazioni</a></li>
-                <li class="nav-item"><a class="nav-link disabled" href="#">Storico</a></li>
-            </ul>
+            {{-- DX: Hamburger -> dropdown utente --}}
+            <div class="col-4 col-md-3 d-flex justify-content-end">
+                <div class="dropdown">
+                    <button class="btn btn-link text-dark p-0 border-0" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false" aria-label="Apri menu utente">
+                        <i class="fa-solid fa-bars fa-lg"></i>
+                    </button>
 
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        {{ auth()->user()->full_name ?? auth()->user()->email }}
-                    </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>
-                                Profilo</a></li>
+                        <li class="dropdown-header">
+                            {{ auth()->user()->full_name ?? auth()->user()->email }}
+                        </li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                <i class="fa-solid fa-user me-2"></i> Profilo
+                            </a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
@@ -32,13 +43,14 @@
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button class="dropdown-item text-danger" type="submit">
-                                    <i class="fas fa-right-from-bracket me-2"></i> Logout
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
                                 </button>
                             </form>
                         </li>
                     </ul>
-                </li>
-            </ul>
+                </div>
+            </div>
+
         </div>
     </div>
 </nav>
