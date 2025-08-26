@@ -35,20 +35,29 @@ class LessonCalendarController extends Controller
             $roomId = null;
 
         // Lezioni del GIORNO selezionato (oggi di default)
-        $lessons = Lesson::query()
+        $lessonsQuery = Lesson::query()
             ->visibleTo($user)
             ->onDay($selectedDay)
             ->inRoom($roomId)
             ->with(['room', 'operator'])
             ->withCount('clients')
-            ->orderBy('starts_at')
-            ->get();
+            ->orderBy('starts_at');
 
         // Label UI
         $monthIso = $contextMonth->format('Y-m');
         $monthLabel = ucfirst($contextMonth->translatedFormat('F'));
         $selectedIso = $selectedDay->toDateString();
         $weekStartIso = $weekStart->toDateString();
+
+        if ($mode === 'client') {
+            $lessonsQuery->withCount([
+                'clients as is_booked' => function ($q) use ($user) {
+                    $q->where('users.id', $user->id);
+                }
+            ]);
+        }
+
+        $lessons = $lessonsQuery->get();
 
         return view('calendar.index', [
             'mode' => $mode,
