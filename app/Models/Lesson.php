@@ -38,6 +38,14 @@ class Lesson extends Model
         return $this->hasMany(LessonUser::class);
     }
 
+    public function clients()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'lesson_users')
+            ->withPivot(['deleted_at'])
+            ->using(\App\Models\LessonUser::class)
+            ->wherePivotNull('deleted_at');
+    }
+
     public function scopePast($query)
     {
         return $query->where('starts_at', '<=', now());
