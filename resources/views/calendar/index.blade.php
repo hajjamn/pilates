@@ -23,6 +23,8 @@
                 const trigger = document.getElementById('monthTrigger');
                 const input = document.getElementById('monthInput');
 
+                if (!trigger || !input) return;
+
                 trigger.addEventListener('click', () => {
                     if (input.showPicker) input.showPicker();
                     else input.click();
@@ -32,15 +34,23 @@
                     const ym = e.target.value; // "YYYY-MM"
                     if (!ym) return;
 
-                    // Autoseleziona sempre il primo del mese scelto
-                    const dayStr = ym + '-01'; // "YYYY-MM-01"
+                    const [Y, M] = ym.split('-').map(Number);
+                    const first = new Date(Y, M - 1, 1);
+                    const jsDow = first.getDay(); // 0=Dom ... 1=Lun ... 6=Sab
+                    const backToMonday = (jsDow + 6) % 7; // giorni per tornare a Lun
+                    const monday = new Date(Y, M - 1, 1 - backToMonday);
+
+                    const pad = n => String(n).padStart(2, '0');
+                    const dayStr = `${ym}-01`;
+                    const weekStr = `${monday.getFullYear()}-${pad(monday.getMonth()+1)}-${pad(monday.getDate())}`;
 
                     const url = new URL("{{ route('calendar.lessons.index') }}", window.location.origin);
-                    url.searchParams.set('month', ym); // mese selezionato
-                    url.searchParams.set('day', dayStr); // 1° del mese selezionato
+                    url.searchParams.set('month', ym); // mese scelto (pill)
+                    url.searchParams.set('day', dayStr); // seleziona il 1° del mese
+                    url.searchParams.set('week', weekStr); // mostra la settimana che contiene il 1°
 
                     @if (!empty($roomId))
-                        url.searchParams.set('room_id', "{{ $roomId }}"); // preserva filtro sala
+                        url.searchParams.set('room_id', "{{ $roomId }}");
                     @endif
 
                     window.location.href = url.toString();
@@ -48,88 +58,225 @@
             })();
         </script>
 
-
-
+        {{-- SETTIMANA --}}
         @php
             use Carbon\Carbon;
 
             $sel = Carbon::parse($selectedDay);
-            $prevD = $sel->copy()->subDays(7);
-            $nextD = $sel->copy()->addDays(7);
+            $weekStartC = Carbon::parse($weekStart);
+            $prevW = $weekStartC->copy()->subDays(7);
+            $nextW = $weekStartC->copy()->addDays(7);
 
-            $common = ['room_id' => $roomId];
+            // Se la nuova settimana è tutta in un mese → aggiorno month, altrimenti mantengo quello attuale
+            $weekUniformMonth = function (Carbon $ws) {
+                $days = collect()->range(0, 6)->map(fn($i) => $ws->copy()->addDays($i));
+                return $days->map->format('Y-m')->unique();
+            };
 
-            $prevUrl = route(
-                'calendar.lessons.index',
-                array_filter(
-                    [
-                        'day' => $prevD->toDateString(),
-                        'month' => $prevD->format('Y-m'),
-                    ] + $common,
-                    fn($v) => $v !== null && $v !== '',
-                ),
-            );
+            $prevMonths = $weekUniformMonth($prevW);
+            $nextMonths = $weekUniformMonth($nextW);
 
-            $nextUrl = route(
-                'calendar.lessons.index',
-                array_filter(
-                    [
-                        'day' => $nextD->toDateString(),
-                        'month' => $nextD->format('Y-m'),
-                    ] + $common,
-                    fn($v) => $v !== null && $v !== '',
-                ),
+            $prevMonthIso = $prevMonths->count() === 1 ? $prevMonths->first() : $monthIso;
+            $nextMonthIso = $nextMonths->count() === 1 ? $nextMonths->first() : $monthIso;
+
+            // Costruisco gli URL mantenendo il giorno selezionato e (se c'è) la sala
+$common = array_filter(
+    [
+        'day' => $selectedDay, // NON cambia
+        'room_id' => $roomId,
+    ],
+    fn($v) => $v !== null && $v !== '',
+);
+
+$prevUrl = route(
+    'calendar.lessons.index',
+    array_merge($common, [
+        'week' => $prevW->toDateString(),
+        'month' => $prevMonthIso,
+    ]),
+);
+
+$nextUrl = route(
+    'calendar.lessons.index',
+    array_merge($common, [
+        'week' => $nextW->toDateString(),
+        'month' => $nextMonthIso,
+                ]),
             );
         @endphp
 
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">
-            {{-- Freccia settimana precedente --}}
-            <a href="{{ $prevUrl }}" aria-label="Settimana precedente" title="Settimana precedente"
-                style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #d1d5db;border-radius:8px;background:#fff;text-decoration:none;">
-                ‹
-            </a>
+        {{-- WRAPPER con overflow per l’animazione --}}
+        <div class="weekbar-wrapper"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">
+            <a href="#" id="weekPrev" aria-label="Settimana precedente" class="btn btn-outline-secondary btn-sm"
+                style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;">‹</a>
 
-            {{-- Qui resta/segue la tua barra dei 7 giorni --}}
-            <div style="display:flex;gap:4px;">
-                @foreach ($weekDays as $day)
-                    @php
-                        $isSelected = $day->toDateString() === $selectedDay;
-                        $labelDay = strtoupper($day->translatedFormat('D')); // LUN, MAR, ...
-                        $url = route(
-                            'calendar.lessons.index',
-                            array_filter(
-                                [
-                                    'day' => $day->toDateString(),
-                                    'month' => $day->format('Y-m'),
-                                    'room_id' => $roomId,
-                                ],
-                                fn($v) => $v !== null && $v !== '',
-                            ),
-                        );
-                    @endphp
-
-                    <a href="{{ $url }}" style="text-decoration:none;">
-                        <div
-                            style="
-                    padding:6px 10px;border-radius:6px;
-                    border:1px solid {{ $isSelected ? '#2563eb' : '#d1d5db' }};
-                    background: {{ $isSelected ? '#e0f2fe' : '#f9fafb' }};
-                    color: {{ $isSelected ? '#1d4ed8' : '#374151' }};
-                    text-align:center;min-width:48px;font-weight:600;">
-                            <div style="font-size:0.75rem;">{{ $labelDay }}</div>
-                            <div style="font-size:0.9rem;">{{ $day->format('j') }}</div>
-                        </div>
-                    </a>
-                @endforeach
+            <div class="weekbar-viewport" style="overflow:hidden;max-width:480px;">
+                <div id="weekbarTrack" class="weekbar-track" style="display:flex;gap:4px;transition:transform .28s ease;">
+                    {{-- CONTENUTO INIZIALE SERVER-SIDE (opzionale, puoi lasciarlo) --}}
+                    @foreach ($weekDays as $day)
+                        @php $isSelected = $day->toDateString() === $selectedDay; @endphp
+                        <a href="{{ route('calendar.lessons.index', [
+                            'day' => $day->toDateString(),
+                            'week' => $weekStart,
+                            'month' => $monthIso,
+                            'room_id' => $roomId,
+                        ]) }}"
+                            style="text-decoration:none;">
+                            <div
+                                style="
+              padding:6px 10px;border-radius:6px;
+              border:1px solid {{ $isSelected ? '#2563eb' : '#d1d5db' }};
+              background: {{ $isSelected ? '#e0f2fe' : '#f9fafb' }};
+              color: {{ $isSelected ? '#1d4ed8' : '#374151' }};
+              text-align:center;min-width:48px;font-weight:600;">
+                                <div style="font-size:0.75rem;">{{ strtoupper($day->translatedFormat('D')) }}</div>
+                                <div style="font-size:0.9rem;">{{ $day->format('j') }}</div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
-            {{-- Freccia settimana successiva --}}
-            <a href="{{ $nextUrl }}" aria-label="Settimana successiva" title="Settimana successiva"
-                style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #d1d5db;border-radius:8px;background:#fff;text-decoration:none;">
-                ›
-            </a>
+            <a href="#" id="weekNext" aria-label="Settimana successiva" class="btn btn-outline-secondary btn-sm"
+                style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;">›</a>
         </div>
 
+
+        {{-- Animazione “slide” prima della navigazione --}}
+        <script>
+            (function() {
+                // --- Stato locale ---
+                const state = {
+                    // YYYY-MM-DD
+                    selectedDay: "{{ $selectedDay }}",
+                    weekStart: "{{ $weekStart }}",
+                    monthIso: "{{ $monthIso }}", // pill del mese attuale
+                    roomId: "{{ $roomId ?? '' }}",
+                    route: "{{ route('calendar.lessons.index') }}", // per i link dei giorni
+                };
+
+                const track = document.getElementById('weekbarTrack');
+                const prev = document.getElementById('weekPrev');
+                const next = document.getElementById('weekNext');
+                const monthTrigger = document.getElementById('monthTrigger');
+                const monthInput = document.getElementById('monthInput');
+
+                const fmtMonth = new Intl.DateTimeFormat('it-IT', {
+                    month: 'long'
+                });
+                const fmtWD = new Intl.DateTimeFormat('it-IT', {
+                    weekday: 'short'
+                });
+
+                const pad = n => String(n).padStart(2, '0');
+                const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+                const addDays = (date, days) => {
+                    const d = new Date(date);
+                    d.setDate(d.getDate() + days);
+                    return d;
+                };
+                const mondayOf = (date) => {
+                    const d = new Date(date);
+                    const jsDow = d.getDay(); // 0=Dom .. 1=Lun .. 6=Sab
+                    const back = (jsDow + 6) % 7;
+                    return addDays(d, -back);
+                };
+                const getWeekDays = (weekStartStr) => {
+                    const ws = new Date(weekStartStr);
+                    return Array.from({
+                        length: 7
+                    }, (_, i) => addDays(ws, i));
+                };
+
+                function buildDayUrl(dayDate) {
+                    const u = new URL(state.route, window.location.origin);
+                    u.searchParams.set('day', iso(dayDate));
+                    u.searchParams.set('week', state.weekStart); // mostro questa settimana
+                    u.searchParams.set('month', state.monthIso); // pill coerente
+                    if (state.roomId) u.searchParams.set('room_id', state.roomId);
+                    return u.toString();
+                }
+
+                function dayButtonHTML(dayDate) {
+                    const selected = (iso(dayDate) === state.selectedDay);
+                    const wd = fmtWD.format(dayDate).toUpperCase(); // LUN, MAR, ...
+                    return `
+      <a href="${buildDayUrl(dayDate)}" style="text-decoration:none;">
+        <div style="
+          padding:6px 10px;border-radius:6px;
+          border:1px solid ${selected ? '#2563eb' : '#d1d5db'};
+          background:${selected ? '#e0f2fe' : '#f9fafb'};
+          color:${selected ? '#1d4ed8' : '#374151'};
+          text-align:center;min-width:48px;font-weight:600;">
+          <div style="font-size:0.75rem;">${wd}</div>
+          <div style="font-size:0.9rem;">${dayDate.getDate()}</div>
+        </div>
+      </a>
+    `;
+                }
+
+                function uniformMonthOfWeek(weekStartStr) {
+                    const months = new Set(getWeekDays(weekStartStr).map(d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`));
+                    return (months.size === 1) ? [...months][0] : null;
+                }
+
+                function updateMonthPillIfNeeded() {
+                    const uniform = uniformMonthOfWeek(state.weekStart);
+                    if (uniform) {
+                        state.monthIso = uniform; // aggiorno il mese “di vista”
+                        if (monthTrigger) monthTrigger.textContent = (fmtMonth.format(new Date(uniform + '-01'))).replace(
+                            /^./, c => c.toUpperCase());
+                        if (monthInput) monthInput.value = state.monthIso;
+                    }
+                }
+
+                function renderWeekBar() {
+                    const days = getWeekDays(state.weekStart);
+                    track.innerHTML = days.map(dayButtonHTML).join('');
+                }
+
+                // Animazione: slide “uscita” poi sostituisco contenuto e slide “entrata”
+                function slideWeek(dir) {
+                    const out = (dir === 1) ? '-60%' : '60%';
+                    const inOpp = (dir === 1) ? '60%' : '-60%';
+
+                    // 1) slide-out
+                    track.style.transform = `translateX(${out})`;
+                    track.addEventListener('transitionend', () => {
+                        // 2) aggiorno lo stato (±7 giorni) e month pill se necessario
+                        const nextWeek = iso(addDays(new Date(state.weekStart), dir * 7));
+                        state.weekStart = nextWeek;
+                        updateMonthPillIfNeeded();
+
+                        // 3) sostituisco contenuto e preparo posizione off-screen opposta
+                        track.style.transition = 'none';
+                        renderWeekBar();
+                        track.style.transform = `translateX(${inOpp})`;
+
+                        // 4) forzo reflow e slide-in a 0
+                        void track.offsetWidth; // reflow
+                        track.style.transition = 'transform .28s ease';
+                        track.style.transform = 'translateX(0)';
+                    }, {
+                        once: true
+                    });
+                }
+
+                // Prev / Next: niente reload
+                prev?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    slideWeek(-1);
+                });
+                next?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    slideWeek(1);
+                });
+
+                // Se vuoi che all’avvio la barra venga “normalizzata” da JS, scommenta:
+                // renderWeekBar();
+            })();
+        </script>
 
 
         {{-- FILTRO SALA --}}
