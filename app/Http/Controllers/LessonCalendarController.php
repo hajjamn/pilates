@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -12,16 +13,17 @@ class LessonCalendarController extends Controller
 {
     public function index(Request $request)
     {
-        $dayParam = $request->query('day');       // 'YYYY-MM-DD' (giorno selezionato)
-        $monthParam = $request->query('month');     // 'YYYY-MM'    (mese per il pill)
-        $weekParam = $request->query('week');      // 'YYYY-MM-DD' (lunedì della settimana mostrata)
+        $dayParam = $request->query('day');
+        $monthParam = $request->query('month');
+        $weekParam = $request->query('week');
         $roomId = $request->query('room_id');
+        $operatorId = $request->query('operator_id');
 
-        $selectedDay = $this->parseDayOrToday($dayParam);                // Carbon
-        $weekStart = $this->parseWeekStartOrFromDay($weekParam, $selectedDay); // Carbon (Lunedì)
-        $weekDays = $this->getWeekDays($weekStart);                   // array[7] Carbon
+        $selectedDay = $this->parseDayOrToday($dayParam);
+        $weekStart = $this->parseWeekStartOrFromDay($weekParam, $selectedDay);
+        $weekDays = $this->getWeekDays($weekStart);
 
-        // Mese di contesto: cambia solo se tutti i 7 giorni sono nello stesso mese
+
         $weekMonths = collect($weekDays)->map(fn($d) => $d->format('Y-m'))->unique();
         $contextMonth = $weekMonths->count() === 1
             ? Carbon::createFromFormat('Y-m', $weekMonths->first())->startOfMonth()
@@ -34,16 +36,30 @@ class LessonCalendarController extends Controller
         if ($roomId && !$rooms->pluck('id')->contains((int) $roomId))
             $roomId = null;
 
-        // Lezioni del GIORNO selezionato (oggi di default)
+        $operators = collect();
+        if (in_array($mode, ['admin', 'client'])) {
+            $operators = User::role('operatore')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'email']);
+        }
+
+        if ($operatorId && !$operators->pluck('id')->contains((int) $operatorId)) {
+            $operatorId = null;
+        }
+
         $lessonsQuery = Lesson::query()
             ->visibleTo($user)
             ->onDay($selectedDay)
             ->inRoom($roomId)
+            ->when(
+                in_array($mode, ['admin', 'client']) && $operatorId,
+                fn($q) =>
+                $q->where('operator_id', $operatorId)
+            )
             ->with(['room', 'operator'])
             ->withCount('clients')
             ->orderBy('starts_at');
 
-        // Label UI
         $monthIso = $contextMonth->format('Y-m');
         $monthLabel = ucfirst($contextMonth->translatedFormat('F'));
         $selectedIso = $selectedDay->toDateString();
@@ -64,11 +80,13 @@ class LessonCalendarController extends Controller
             'monthIso' => $monthIso,
             'monthLabel' => $monthLabel,
             'selectedDay' => $selectedIso,
-            'weekStart' => $weekStartIso,  // <- nuovo
-            'weekDays' => $weekDays,      // <- array di Carbon
+            'weekStart' => $weekStartIso,
+            'weekDays' => $weekDays,
             'roomId' => $roomId,
             'rooms' => $rooms,
             'lessons' => $lessons,
+            'operators' => $operators,
+            'operatorId' => $operatorId
         ]);
     }
 

@@ -279,40 +279,93 @@ $nextUrl = route(
         </script>
 
 
-        {{-- FILTRO SALA --}}
-        <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;">
-            <label for="roomFilter" style="font-weight:600;">Sala:</label>
+        {{-- FILTRI: Sala + Operatore --}}
+        <div class="d-flex flex-wrap align-items-center gap-2 my-2">
 
-            <form id="roomFilterForm" method="GET" action="{{ route('calendar.lessons.index') }}">
-                {{-- Conserva gli altri parametri --}}
+            {{-- Sala (già esistente) --}}
+            <form id="roomFilterForm" method="GET" action="{{ route('calendar.lessons.index') }}" class="d-inline">
                 <input type="hidden" name="day" value="{{ $selectedDay }}">
+                <input type="hidden" name="week" value="{{ $weekStart ?? '' }}">
                 <input type="hidden" name="month" value="{{ $monthIso }}">
+                @if (!empty($operatorId))
+                    <input type="hidden" name="operator_id" value="{{ $operatorId }}">
+                @endif
 
-                <select id="roomFilter" name="room_id"
-                    style="padding:8px 10px;border:1px solid #d1d5db;border-radius:10px;min-width:220px;">
+                <label for="roomFilter" class="fw-semibold me-1">Sala:</label>
+                <select id="roomFilter" name="room_id" class="form-select form-select-sm d-inline-block"
+                    style="min-width:220px;">
                     <option value="">Tutte le sale</option>
                     @foreach ($rooms as $room)
-                        <option value="{{ $room->id }}"
-                            {{ (string) $room->id === (string) $roomId ? 'selected' : '' }}>
+                        <option value="{{ $room->id }}" {{ (string) $room->id === (string) $roomId ? 'selected' : '' }}>
                             {{ $room->name }}
                         </option>
                     @endforeach
                 </select>
             </form>
 
-            @if ($roomId)
-                <a href="{{ route('calendar.lessons.index', ['day' => $selectedDay, 'month' => $monthIso]) }}"
-                    style="margin-left:6px;font-size:.9rem;color:#2563eb;text-decoration:underline;">
-                    Rimuovi filtro
-                </a>
+            {{-- Operatore: solo per client/admin --}}
+            @if (in_array($mode, ['admin', 'client']))
+                <form id="operatorFilterForm" method="GET" action="{{ route('calendar.lessons.index') }}"
+                    class="d-inline">
+                    <input type="hidden" name="day" value="{{ $selectedDay }}">
+                    <input type="hidden" name="week" value="{{ $weekStart ?? '' }}">
+                    <input type="hidden" name="month" value="{{ $monthIso }}">
+                    @if (!empty($roomId))
+                        <input type="hidden" name="room_id" value="{{ $roomId }}">
+                    @endif
+
+                    <label for="operatorFilter" class="fw-semibold ms-2 me-1">Operatore:</label>
+                    <select id="operatorFilter" name="operator_id" class="form-select form-select-sm d-inline-block"
+                        style="min-width:220px;">
+                        <option value="">Tutti gli operatori</option>
+                        @foreach ($operators as $op)
+                            @php
+                                // se hai accessor full_name sul modello User
+                                $label =
+                                    method_exists($op, 'getFullNameAttribute') || isset($op->full_name)
+                                        ? $op->full_name ?? ''
+                                        : trim(($op->first_name ?? '') . ' ' . ($op->last_name ?? ''));
+                                if ($label === '') {
+                                    $label = $op->email;
+                                }
+                            @endphp
+                            <option value="{{ $op->id }}"
+                                {{ (string) $op->id === (string) $operatorId ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+
+                @if ($operatorId)
+                    <a href="{{ route(
+                        'calendar.lessons.index',
+                        array_filter(
+                            [
+                                'day' => $selectedDay,
+                                'week' => $weekStart ?? null,
+                                'month' => $monthIso,
+                                'room_id' => $roomId,
+                            ],
+                            fn($v) => $v !== null && $v !== '',
+                        ),
+                    ) }}"
+                        class="ms-1 small text-decoration-underline">
+                        Rimuovi filtro operatore
+                    </a>
+                @endif
             @endif
         </div>
 
         <script>
-            document.getElementById('roomFilter').addEventListener('change', function() {
+            document.getElementById('roomFilter')?.addEventListener('change', () => {
                 document.getElementById('roomFilterForm').submit();
             });
+            document.getElementById('operatorFilter')?.addEventListener('change', () => {
+                document.getElementById('operatorFilterForm').submit();
+            });
         </script>
+
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;">
             <div style="opacity:.7;font-size:.95rem;">
