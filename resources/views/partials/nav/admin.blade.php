@@ -11,7 +11,6 @@
 
         <div class="collapse navbar-collapse" id="navAdmin">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('operator.operators.index') }}">Gestione
                         Operatori</a></li>
                 {{-- aggiungi qui altre voci admin (pacchetti, pagamenti, report, ecc.) --}}
