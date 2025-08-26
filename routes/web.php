@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomeRedirectController;
+use App\Http\Controllers\LessonCalendarController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,14 @@ Route::prefix('gdp-template')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
+
+    //------------------------------
+    // CALENDAR
+    //------------------------------
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/calendario-lezioni', [LessonCalendarController::class, 'index'])
+            ->name('calendar.lessons.index');
     });
 
     //------------------------------

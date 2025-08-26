@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\User;
+use Carbon\Carbon;
 
 class Lesson extends Model
 {
@@ -70,5 +73,43 @@ class Lesson extends Model
     {
         return $this->lessonUsers->map->user;
     }
+
+    public function scopeVisibleTo(Builder $q, User $user): Builder
+    {
+        if ($user->hasRole('admin') || $user->hasRole('cliente')) {
+            return $q; // nessun limite aggiuntivo
+        }
+
+        if ($user->hasRole('operatore')) {
+            return $q->where('operator_id', $user->id);
+        }
+
+        // Altri ruoli non mappati: prudente → non filtriamo (adatta se necessario)
+        return $q;
+    }
+
+    public function scopeOnDay(Builder $q, $day): Builder
+    {
+        $date = $day instanceof Carbon ? $day->toDateString() : (string) $day;
+        return $q->whereDate('starts_at', $date);
+    }
+
+    public function scopeInMonth(Builder $q, $month): Builder
+    {
+        $start = $month instanceof Carbon
+            ? $month->copy()->startOfMonth()
+            : Carbon::createFromFormat('Y-m', (string) $month)->startOfMonth();
+
+        $end = $start->copy()->endOfMonth();
+
+        return $q->whereBetween('starts_at', [$start, $end]);
+    }
+
+    public function scopeInRoom(Builder $q, $roomId): Builder
+    {
+        return $q->when($roomId, fn($qq) => $qq->where('room_id', $roomId));
+    }
+
+
 
 }
