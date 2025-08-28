@@ -61,14 +61,37 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Lesson::class, 'operator_id');
     }
 
-    public function getLessonsAttribute()
+    /* public function getLessonsAttribute()
     {
         return $this->lessonUsers->map->lesson;
+    } */
+
+    public function lessonsAsClient()
+    {
+        return $this->belongsToMany(\App\Models\Lesson::class, 'lesson_users')
+            ->withPivot([
+                'attended',
+                'added_by_user_id',
+                'paid',
+                'paid_to_user_id',
+                'user_package_id',
+                'counted',
+                'deleted_at',
+            ])
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function getRemainingPackageLessonsAttribute(): int
+    {
+        return (int) $this->packages()
+            ->active()
+            ->sum('lessons_remaining');
     }
 
     public function scopeClients($query)

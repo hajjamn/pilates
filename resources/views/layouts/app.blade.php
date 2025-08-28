@@ -21,15 +21,12 @@
 <body>
     <div id="app">
 
-
-        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+        {{-- <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
                 <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
                     <div class="logo_nav">
                         <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="App Logo" style="height: 40px;">
                     </div>
-
-                    {{-- config('app.name', 'Laravel') --}}
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -39,7 +36,7 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <!-- Left Side Of Navbar -->
+
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url('/') }}">{{ __('Home') }}</a>
@@ -60,9 +57,8 @@
                         @endrole
                     </ul>
 
-                    <!-- Right Side Of Navbar -->
+
                     <ul class="navbar-nav ml-auto">
-                        <!-- Authentication Links -->
                         @guest
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
@@ -98,11 +94,40 @@
                     </ul>
                 </div>
             </div>
-        </nav>
+        </nav> --}}
 
-        <main class="">
+        <header>
+            @auth
+                @php $u = auth()->user(); @endphp
+
+                @if ($u->hasRole('admin'))
+                    @include('partials.nav.admin')
+                @elseif ($u->hasRole('operatore'))
+                    @include('partials.nav.operator')
+                @elseif ($u->hasRole('cliente'))
+                    @include('partials.nav.client')
+                @else
+                    @include('partials.nav.guest')
+                @endif
+            @else
+                @include('partials.nav.guest')
+            @endauth
+
+
+            {{-- PAGE HEADER (titolo, contatori, ecc.) opzionale --}}
+            @auth
+                @hasSection('page-header')
+                    <div class="container mt-3">
+                        @yield('page-header')
+                    </div>
+                @endif
+            @endauth
+        </header>
+
+        <main>
             @yield('content')
         </main>
+
     </div>
 </body>
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\HomeRedirectController;
+use App\Http\Controllers\LessonCalendarController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -13,11 +15,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('gdp-template')->group(function () {
 
     //------------------------------
-    // GUEST AREA
+    // HOME
     //------------------------------
-    Route::get('/', function () {
-        return view('welcome');
-    });
+    Route::get('/', HomeRedirectController::class)->name('home.redirect');
 
     //------------------------------
     // SHARED PROFILE
@@ -26,6 +26,14 @@ Route::prefix('gdp-template')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
+
+    //------------------------------
+    // CALENDAR
+    //------------------------------
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/calendario-lezioni', [LessonCalendarController::class, 'index'])
+            ->name('calendar.lessons.index');
     });
 
     //------------------------------
@@ -68,9 +76,8 @@ Route::prefix('gdp-template')->group(function () {
         ->prefix('cliente')
         ->name('client.')
         ->group(function () {
-            Route::get('/', function () {
-                return view('client.dashboard');
-            });
+            Route::get('/', [\App\Http\Controllers\Client\DashboardController::class, 'index'])
+                ->name('dashboard');
         });
 
     require __DIR__ . '/auth.php';
