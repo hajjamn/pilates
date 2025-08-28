@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomeRedirectController;
+use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
@@ -34,6 +35,18 @@ Route::prefix('gdp-template')->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/calendario-lezioni', [LessonCalendarController::class, 'index'])
             ->name('calendar.lessons.index');
+    });
+
+
+    //------------------------------
+    // LESSON BOOKINGS
+    //------------------------------
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::post('/lessons/{lesson}/book', [LessonBookingController::class, 'store'])
+            ->name('lessons.book');
+
+        Route::delete('/bookings/{booking}', [LessonBookingController::class, 'destroy'])
+            ->name('bookings.cancel');
     });
 
     //------------------------------
