@@ -13,7 +13,10 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="{{ route('operator.operators.index') }}">Gestione
                         Operatori</a></li>
-                {{-- aggiungi qui altre voci admin (pacchetti, pagamenti, report, ecc.) --}}
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.availability.index') }}">Gestione
+                        Disponibilità</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('operator.availability.show') }}">Disponibilità
+                        Personale</a></li>
             </ul>
 
             <ul class="navbar-nav ms-auto">

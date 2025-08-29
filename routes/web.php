@@ -3,6 +3,8 @@
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
+use App\Http\Controllers\Operator\AvailabilityController as OperatorAvailabilityController;
+use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +54,7 @@ Route::prefix('gdp-template')->group(function () {
     //------------------------------
     // ADMIN AREA
     //------------------------------
-    Route::middleware(['auth', 'verified'])
+    Route::middleware(['auth', 'verified', 'role:admin'])
         ->prefix('amministrazione')
         ->name('admin.')
         ->group(function () {
@@ -64,6 +66,17 @@ Route::prefix('gdp-template')->group(function () {
             /* Route::resource('/utenti', UserController::class)
                 ->names('users')
                 ->parameters(['utenti' => 'user']); */
+
+            Route::get('/disponibilita-settimanale', [AdminAvailabilityController::class, 'index'])
+                ->name('availability.index');
+
+            // Form/Anteprima generazione lezioni per intervallo [da, a]
+            Route::get('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'showGenerate'])
+                ->name('availability.generate.form');
+
+            // Esecuzione generazione (idempotente) nel range scelto
+            Route::post('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'generate'])
+                ->name('availability.generate.run');
         });
 
     //------------------------------
@@ -73,6 +86,7 @@ Route::prefix('gdp-template')->group(function () {
         ->prefix('operatore')
         ->name('operator.')
         ->group(function () {
+
             Route::get('/', function () {
                 return view('operator.dashboard');
             })->name('dashboard');
@@ -80,6 +94,9 @@ Route::prefix('gdp-template')->group(function () {
             Route::resource('/operatori', OperatorController::class)
                 ->names('operators')
                 ->parameters(['operatori' => 'operator']);
+
+            Route::get('/disponibilita-settimanale', [OperatorAvailabilityController::class, 'show'])
+                ->name('availability.show');
         });
 
     //------------------------------
