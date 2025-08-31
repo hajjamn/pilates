@@ -11,7 +11,6 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('operator_id')->constrained('users')->cascadeOnDelete();
 
-            // workflow
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->date('effective_from');
 
@@ -22,11 +21,14 @@ return new class extends Migration {
             $table->timestamp('reviewed_at')->nullable();
             $table->string('reason')->nullable();
 
+            $table->timestamp('applied_at')->nullable();
+
             $table->softDeletes();
             $table->timestamps();
 
             $table->index(['operator_id', 'status']);
             $table->index('effective_from');
+            $table->index(['operator_id', 'effective_from', 'status'], 'acr_op_eff_stat_idx');
         });
     }
 

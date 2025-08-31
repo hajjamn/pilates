@@ -29,15 +29,32 @@ class AvailabilityController extends Controller
             $hours[] = sprintf('%02d:00', $h);
         }
 
+        $rooms = [
+            ['id' => 1, 'label' => 'Sala A'],
+            ['id' => 2, 'label' => 'Sala B'],
+        ];
+
+        $weekParam = $request->query('week');
+        if ($weekParam) {
+            $weekStart = Carbon::parse($weekParam)->startOfWeek(Carbon::MONDAY);
+        } else {
+            $weekStart = Carbon::today()->next(Carbon::MONDAY);
+        }
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+        $prevWeek = $weekStart->copy()->subWeek()->toDateString();
+        $nextWeek = $weekStart->copy()->addWeek()->toDateString();
+
+        $dayDate = [];
+        foreach ($days as $d) {
+            $dayDate[$d['key']] = $weekStart->copy()->addDays($d['key'])->toDateString();
+        }
+
         $matrix = [];
         foreach ($days as $d) {
             $dayKey = (int) $d['key'];
             $matrix[$dayKey] = [];
             foreach ($hours as $hour) {
-                $matrix[$dayKey][$hour] = [
-                    1 => [],
-                    2 => [],
-                ];
+                $matrix[$dayKey][$hour] = [1 => [], 2 => []];
             }
         }
 
@@ -50,25 +67,75 @@ class AvailabilityController extends Controller
             $dayKey = (int) $slot->day_of_week;
             $hour = Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
             $room = (int) $slot->room_id;
-
             if (!isset($matrix[$dayKey][$hour][$room])) {
                 continue;
             }
-
-            $opName = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? ''));
-            if ($opName === '') {
-                $opName = 'Operatore #' . $slot->operator_id;
-            }
-
-            $matrix[$dayKey][$hour][$room][] = [
-                'id' => (int) $slot->operator_id,
-                'name' => $opName,
-            ];
+            $name = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? '')) ?: ('Operatore #' . $slot->operator_id);
+            $matrix[$dayKey][$hour][$room][] = ['id' => (int) $slot->operator_id, 'name' => $name];
         }
 
-        $rooms = [
-            ['id' => 1, 'label' => 'Sala A'],
-            ['id' => 2, 'label' => 'Sala B'],
+        $lessons = Lesson::query()
+            ->whereBetween('starts_at', [$weekStart->copy()->startOfDay(), $weekEnd->copy()->endOfDay()])
+            ->where('canceled', false)
+            ->with(['operator:id,first_name,last_name'])
+            ->get(['id', 'room_id', 'operator_id', 'starts_at']);
+
+        $occupied = [];
+        foreach ($lessons as $L) {
+            $d = $L->starts_at->toDateString();
+            $h = $L->starts_at->format('H:i');
+            $r = (int) $L->room_id;
+            $occupied[$d][$h][$r][] = $L->id;
+        }
+
+        $availKeySet = [];
+        foreach ($slots as $slot) {
+            $k = $slot->operator_id . '|' . $slot->room_id . '|' . $slot->day_of_week . '|' . Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i:s');
+            $availKeySet[$k] = true;
+        }
+
+        $uncovered = [];
+        foreach ($lessons as $L) {
+            $dow = $L->starts_at->dayOfWeekIso - 1;
+            $startKey = $L->starts_at->format('H:i:00');
+            $k = $L->operator_id . '|' . $L->room_id . '|' . $dow . '|' . $startKey;
+            if (!isset($availKeySet[$k])) {
+                $name = trim(($L->operator->first_name ?? '') . ' ' . ($L->operator->last_name ?? '')) ?: ('Operatore #' . $L->operator_id);
+                $uncovered[] = [
+                    'date' => $L->starts_at->toDateString(),
+                    'time' => $L->starts_at->format('H:i'),
+                    'room_id' => (int) $L->room_id,
+                    'operator_id' => (int) $L->operator_id,
+                    'operator_name' => $name,
+                    'lesson_id' => (int) $L->id,
+                ];
+            }
+        }
+
+        $conflictMap = [];
+        $availabilityConflicts = [];
+        foreach ($days as $d) {
+            $dk = $d['key'];
+            foreach ($hours as $h) {
+                foreach ([1, 2] as $r) {
+                    $ops = $matrix[$dk][$h][$r];
+                    if (count($ops) > 1) {
+                        $conflictMap[$dk][$h][$r] = true;
+                        $availabilityConflicts[] = [
+                            'date' => $dayDate[$dk],
+                            'time' => $h,
+                            'room_id' => $r,
+                            'operators' => array_map(fn($o) => $o['name'], $ops),
+                        ];
+                    }
+                }
+            }
+        }
+
+        $healthCounts = [
+            'uncovered' => count($uncovered),
+            'conflicts' => count($availabilityConflicts),
+            'occupied' => collect($occupied)->flatten(2)->count(),
         ];
 
         return view('admin.availability.index', [
@@ -76,6 +143,16 @@ class AvailabilityController extends Controller
             'hours' => $hours,
             'rooms' => $rooms,
             'matrix' => $matrix,
+            'week_start' => $weekStart->toDateString(),
+            'week_end' => $weekEnd->toDateString(),
+            'prev_week' => $prevWeek,
+            'next_week' => $nextWeek,
+            'day_date' => $dayDate,
+            'occupied' => $occupied,
+            'uncovered' => $uncovered,
+            'availability_conflicts' => $availabilityConflicts,
+            'conflict_map' => $conflictMap,
+            'health_counts' => $healthCounts,
         ]);
     }
 

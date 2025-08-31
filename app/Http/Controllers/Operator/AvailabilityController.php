@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
 use App\Models\WeeklyAvailability;
 use Illuminate\Http\Request;
+use App\Models\AvailabilityChangeRequest;
+use Carbon\Carbon;
 
 class AvailabilityController extends Controller
 {
@@ -44,7 +46,7 @@ class AvailabilityController extends Controller
 
         foreach ($slots as $slot) {
             $dayKey = (int) $slot->day_of_week;
-            $hour = \Carbon\Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
+            $hour = Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
             if (array_key_exists($dayKey, $matrix) && array_key_exists($hour, $matrix[$dayKey])) {
                 $matrix[$dayKey][$hour] = (int) $slot->room_id;
             }
@@ -62,4 +64,5 @@ class AvailabilityController extends Controller
             'hasAny' => $hasAny,
         ]);
     }
+
 }

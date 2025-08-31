@@ -15,8 +15,11 @@
                         Operatori</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('admin.availability.index') }}">Gestione
                         Disponibilità</a></li>
+                <li class="nav-item"><a class="nav-link"
+                        href="{{ route('admin.availability.requests.index') }}">Richieste Cambio Disponibilità</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('operator.availability.show') }}">Disponibilità
                         Personale</a></li>
+
             </ul>
 
             <ul class="navbar-nav ms-auto">

@@ -11,6 +11,8 @@
             <div class="alert alert-warning">Nessuna disponibilità impostata.</div>
         @endif
 
+        <a href="{{ route('operator.availability.requests.create') }}" class="btn btn-primary mb-3">Proponi Cambio</a>
+
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle text-center">
                 <thead class="table-light">
