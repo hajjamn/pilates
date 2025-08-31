@@ -70,6 +70,17 @@ Route::prefix('gdp-template')->group(function () {
         });
 
     //------------------------------
+    // PACKAGES
+    //------------------------------
+    Route::middleware(['auth', 'verified'])
+        ->group(function () {
+            Route::resource('/pacchetti', \App\Http\Controllers\PackageController::class)
+                ->only(['index', 'show'])
+                ->names('packages')
+                ->parameters(['pacchetti' => 'package']);
+        });
+
+    //------------------------------
     // ADMIN AREA
     //------------------------------
     Route::middleware(['auth', 'verified', 'role:admin'])
@@ -115,6 +126,10 @@ Route::prefix('gdp-template')->group(function () {
             Route::resource('/macchine', \App\Http\Controllers\MachineController::class)
                 ->names('machines')
                 ->parameters(['macchine' => 'machine']);
+
+            Route::resource('/pacchetti', \App\Http\Controllers\PackageController::class)
+                ->names('packages')
+                ->parameters(['pacchetti' => 'package']);
         });
 
     //------------------------------

@@ -4,7 +4,6 @@
 
 @section('content')
     <div class="container" style="max-width:1100px;">
-        {{-- Header semplice --}}
 
         {{-- SELEZIONATORE MESE --}}
         <div style="display:flex;justify-content:center;margin:10px 0 14px;">
@@ -296,7 +295,8 @@ $nextUrl = route(
                     style="min-width:220px;">
                     <option value="">Tutte le sale</option>
                     @foreach ($rooms as $room)
-                        <option value="{{ $room->id }}" {{ (string) $room->id === (string) $roomId ? 'selected' : '' }}>
+                        <option value="{{ $room->id }}"
+                            {{ (string) $room->id === (string) $roomId ? 'selected' : '' }}>
                             {{ $room->name }}
                         </option>
                     @endforeach
