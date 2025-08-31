@@ -18,12 +18,14 @@ class Lesson extends Model
         'operator_id',
         'starts_at',
         'max_clients',
-        'canceled'
+        'canceled',
+        'manual_override'
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
-        'canceled' => 'boolean'
+        'canceled' => 'boolean',
+        'manual_override' => 'boolean'
     ];
 
     public function room()
