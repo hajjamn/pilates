@@ -54,6 +54,22 @@ Route::prefix('gdp-template')->group(function () {
     });
 
     //------------------------------
+    // ROOMS AND MACHINES
+    //------------------------------
+    Route::middleware(['auth', 'verified'])
+        ->group(function () {
+            Route::resource('/sale', \App\Http\Controllers\RoomController::class)
+                ->only(['index', 'show'])
+                ->names('rooms')
+                ->parameters(['sale' => 'room']);
+
+            Route::resource('/macchine', \App\Http\Controllers\MachineController::class)
+                ->only(['index', 'show'])
+                ->names('machines')
+                ->parameters(['macchine' => 'machine']);
+        });
+
+    //------------------------------
     // ADMIN AREA
     //------------------------------
     Route::middleware(['auth', 'verified', 'role:admin'])
@@ -91,6 +107,14 @@ Route::prefix('gdp-template')->group(function () {
 
             Route::post('/disponibilita-settimanale/richieste/{acr}/reject', [AdminAvailabilityChangeRequestController::class, 'reject'])
                 ->name('availability.requests.reject');
+
+            Route::resource('/sale', \App\Http\Controllers\RoomController::class)
+                ->names('rooms')
+                ->parameters(['sale' => 'room']);
+
+            Route::resource('/macchine', \App\Http\Controllers\MachineController::class)
+                ->names('machines')
+                ->parameters(['macchine' => 'machine']);
         });
 
     //------------------------------
