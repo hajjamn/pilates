@@ -2,39 +2,24 @@
 
 namespace Database\Seeders;
 
-//use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use App\Models\Package;
 use Illuminate\Database\Seeder;
+use App\Models\Package;
 
 class PackageSeeder extends Seeder
 {
     public function run(): void
     {
-        $packages = [
-            [
-                'name' => '4 lezioni base',
-                'total_lessons' => 4,
-                'price' => 60.00,
-            ],
-            [
-                'name' => '10 lezioni intermedio',
-                'total_lessons' => 10,
-                'price' => 120.00,
-            ],
-            [
-                'name' => '20 lezioni pro',
-                'total_lessons' => 20,
-                'price' => 220.00,
-            ],
-            [
-                'name' => 'Pacchetto prova',
-                'total_lessons' => 1,
-                'price' => 10.00,
-            ]
+        $defs = [
+            ['name' => 'Lezione singola', 'total_lessons' => 1,  'price' => 25.00],
+            ['name' => 'Pacchetto 5',     'total_lessons' => 5,  'price' => 110.00],
+            ['name' => 'Pacchetto 10',    'total_lessons' => 10, 'price' => 200.00],
         ];
 
-        foreach ($packages as $package) {
-            Package::firstOrCreate(['name' => $package['name']], $package);
+        foreach ($defs as $d) {
+            Package::updateOrCreate(
+                ['name' => $d['name']],
+                ['total_lessons' => $d['total_lessons'], 'price' => $d['price']]
+            );
         }
     }
 }

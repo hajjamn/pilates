@@ -73,6 +73,21 @@ class LessonCalendarController extends Controller
             ]);
         }
 
+        if (in_array($mode, ['admin', 'operator'])) {
+            // Carico i booking con utente e pacchetto per le card di gestione
+            $lessonsQuery->with([
+                'lessonUsers' => fn($q) => $q->active()->with([
+                    'user:id,first_name,last_name,email,phone',
+                    'userPackage:id,package_id,lessons_remaining',
+                    'userPackage.package:id,name',
+                ])->orderBy('id'), // opzionale
+                'room:id,name',
+                'operator:id,first_name,last_name,email',
+            ]);
+        } else {
+            $lessonsQuery->with(['room', 'operator']);
+        }
+        // ... e poi:
         $lessons = $lessonsQuery->get();
 
         return view('calendar.index', [

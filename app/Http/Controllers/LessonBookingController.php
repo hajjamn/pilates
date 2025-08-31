@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ManagedBookingRequest;
 use App\Models\Lesson;
 use App\Models\LessonUser;
 use App\Models\User;
@@ -12,9 +13,20 @@ use Illuminate\Database\QueryException;
 use Carbon\Carbon;
 use App\Models\UserPackage;
 use Illuminate\Validation\ValidationException;
+use App\Services\BookingService;
 
 class LessonBookingController extends Controller
 {
+    public function __construct(private BookingService $bookingService)
+    {
+        // Nessuna registrazione manuale: Laravel risolve BookingService via DI.
+    }
+
+    /**
+     * === TUO METODO ESISTENTE ===
+     * Iscrizione self-service (client) o via operator/admin (vecchio flusso).
+     * NON MODIFICATO.
+     */
     public function store(Request $request, Lesson $lesson)
     {
         $actor = Auth::user();
@@ -141,8 +153,53 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Iscrizione completata.');
     }
 
+    /**
+     * === NUOVO ===
+     * Aggiunta "gestita" (operatore/admin) di un cliente ad una lezione.
+     * - Consente aggiunta anche a lezioni PASSATE.
+     * - Vietata se lezione CANCELLED.
+     * Richiede rotte protette da role:operatore|admin.
+     */
+    public function storeManaged(ManagedBookingRequest $request, Lesson $lesson)
+    {
+        $actor = Auth::user();
 
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
 
+        try {
+            $booking = $this->bookingService->addBooking(
+                lesson: $lesson,
+                clientUserId: (int) $request->integer('user_id'),
+                markPaid: (bool) $request->boolean('paid'),
+                usePackage: (bool) $request->boolean('use_package'),
+                userPackageId: $request->input('user_package_id'),
+                actor: $actor
+            );
+        } catch (ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'errors' => $e->errors()], 422);
+            }
+            return back()->withErrors($e->errors());
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'booking' => $booking,
+                'message' => 'Cliente aggiunto alla lezione.',
+            ]);
+        }
+
+        return back()->with('status', 'Cliente aggiunto alla lezione.');
+    }
+
+    /**
+     * === TUO METODO ESISTENTE ===
+     * Rimozione prenotazione (soft delete) con rimborsi crediti per future.
+     * NON MODIFICATO.
+     */
     public function destroy(LessonUser $booking)
     {
         $actor = Auth::user();
@@ -187,6 +244,104 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Prenotazione annullata.');
     }
 
+    /**
+     * === NUOVO ===
+     * Toggle attended (operatore/admin).
+     */
+    public function toggleAttended(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking = $this->bookingService->toggleAttended($booking);
+
+        return response()->json([
+            'ok' => true,
+            'booking' => $booking,
+        ]);
+    }
+
+    /**
+     * === NUOVO ===
+     * Toggle paid (operatore/admin).
+     */
+    public function togglePaid(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking = $this->bookingService->togglePaid($booking, $actor);
+
+        return response()->json([
+            'ok' => true,
+            'booking' => $booking,
+        ]);
+    }
+
+    /**
+     * === NUOVO ===
+     * Autocomplete dei clienti + loro pacchetti attivi.
+     * Param: ?q= (nome/email/telefono)
+     */
+    public function searchClients(Request $request)
+    {
+        $actor = Auth::user();
+        if (!$actor->hasAnyRole(['operatore', 'admin'])) {
+            abort(403);
+        }
+
+        $q = trim((string) $request->query('q', ''));
+
+        $users = User::role('cliente')
+            ->when($q !== '', function ($qq) use ($q) {
+                $like = '%' . str_replace(' ', '%', $q) . '%';
+                $qq->where(function ($w) use ($like) {
+                    $w->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('phone', 'like', $like);
+                });
+            })
+            ->orderBy('last_name')
+            ->limit(20)
+            ->get(['id', 'first_name', 'last_name', 'email', 'phone']);
+
+        $packages = UserPackage::query()
+            ->whereIn('user_id', $users->pluck('id'))
+            ->where('lessons_remaining', '>', 0)
+            ->with('package:id,name')
+            ->get(['id', 'user_id', 'package_id', 'lessons_remaining']);
+
+        $byUser = $packages->groupBy('user_id');
+
+        $result = $users->map(function ($u) use ($byUser) {
+            return [
+                'id' => $u->id,
+                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+                'email' => $u->email,
+                'phone' => $u->phone,
+                'packages' => ($byUser[$u->id] ?? collect())->map(function ($p) {
+                    return [
+                        'id' => $p->id,
+                        'label' => $p->package?->name . ' (rimasti: ' . $p->lessons_remaining . ')',
+                        'lessons_remaining' => $p->lessons_remaining,
+                    ];
+                })->values(),
+            ];
+        })->values();
+
+        return response()->json(['ok' => true, 'data' => $result]);
+    }
+
+    // ===== Helpers esistenti/nuovi =====
 
     private function clientCanCancel(Lesson $lesson, Carbon $nowRome, int $requiredHours = 6, string $tz = 'Europe/Rome'): bool
     {
@@ -225,5 +380,11 @@ class LessonBookingController extends Controller
         }
 
         return $minutes;
+    }
+
+    private function canManageLesson(User $actor, Lesson $lesson): bool
+    {
+        return $actor->hasRole('admin')
+            || ($actor->hasRole('operatore') && (int) $lesson->operator_id === (int) $actor->id);
     }
 }

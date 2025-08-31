@@ -1,15 +1,22 @@
 <?php
 
+use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
+use App\Http\Controllers\LessonManageController;
+use App\Http\Controllers\MachineController;
 use App\Http\Controllers\Operator\AvailabilityController as OperatorAvailabilityController;
 use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
 use App\Http\Controllers\Operator\AvailabilityChangeRequestController as OperatorAvailabilityChangeRequestController;
 use App\Http\Controllers\Admin\AvailabilityChangeRequestController as AdminAvailabilityChangeRequestController;
 use App\Http\Controllers\Operator\OperatorController;
+use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoomController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\UserPackageController as AdminUserPackageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,24 +53,62 @@ Route::prefix('gdp-template')->group(function () {
     // LESSON BOOKINGS
     //------------------------------
     Route::middleware(['auth', 'verified'])->group(function () {
+
         Route::post('/lessons/{lesson}/book', [LessonBookingController::class, 'store'])
             ->name('lessons.book');
 
         Route::delete('/bookings/{booking}', [LessonBookingController::class, 'destroy'])
             ->name('bookings.cancel');
+
+        Route::middleware(['role:operatore|admin'])->group(function () {
+
+            Route::post('/lessons/{lesson}/bookings', [LessonBookingController::class, 'storeManaged'])
+                ->name('bookings.store');
+
+            Route::post('/bookings/{booking}/toggle-attended', [LessonBookingController::class, 'toggleAttended'])
+                ->name('bookings.toggleAttended');
+
+            Route::post('/bookings/{booking}/toggle-paid', [LessonBookingController::class, 'togglePaid'])
+                ->name('bookings.togglePaid');
+
+            Route::get('/clients/search', [LessonBookingController::class, 'searchClients'])
+                ->name('clients.search');
+        });
     });
+
+    //------------------------------
+// LESSON MANAGE (create/cancel)
+//------------------------------
+    Route::middleware(['auth', 'verified', 'role:operatore|admin'])->group(function () {
+        // crea lezione manuale
+        Route::post('/lessons', [LessonManageController::class, 'store'])
+            ->name('lessons.store');
+
+        // annulla / ripristina
+        Route::post('/lessons/{lesson}/cancel', [LessonManageController::class, 'cancel'])
+            ->name('lessons.cancel');
+        Route::post('/lessons/{lesson}/uncancel', [LessonManageController::class, 'uncancel'])
+            ->name('lessons.uncancel');
+
+        // opzionale: elimina record (uso amministrativo “hard delete”)
+        Route::delete('/lessons/{lesson}', [LessonManageController::class, 'destroy'])
+            ->name('lessons.destroy')
+            ->middleware('role:admin');
+    });
+
+
 
     //------------------------------
     // ROOMS AND MACHINES
     //------------------------------
     Route::middleware(['auth', 'verified'])
         ->group(function () {
-            Route::resource('/sale', \App\Http\Controllers\RoomController::class)
+            Route::resource('/sale', RoomController::class)
                 ->only(['index', 'show'])
                 ->names('rooms')
                 ->parameters(['sale' => 'room']);
 
-            Route::resource('/macchine', \App\Http\Controllers\MachineController::class)
+            Route::resource('/macchine', MachineController::class)
                 ->only(['index', 'show'])
                 ->names('machines')
                 ->parameters(['macchine' => 'machine']);
@@ -74,7 +119,7 @@ Route::prefix('gdp-template')->group(function () {
     //------------------------------
     Route::middleware(['auth', 'verified'])
         ->group(function () {
-            Route::resource('/pacchetti', \App\Http\Controllers\PackageController::class)
+            Route::resource('/pacchetti', PackageController::class)
                 ->only(['index', 'show'])
                 ->names('packages')
                 ->parameters(['pacchetti' => 'package']);
@@ -119,17 +164,25 @@ Route::prefix('gdp-template')->group(function () {
             Route::post('/disponibilita-settimanale/richieste/{acr}/reject', [AdminAvailabilityChangeRequestController::class, 'reject'])
                 ->name('availability.requests.reject');
 
-            Route::resource('/sale', \App\Http\Controllers\RoomController::class)
+            Route::resource('/sale', RoomController::class)
                 ->names('rooms')
                 ->parameters(['sale' => 'room']);
 
-            Route::resource('/macchine', \App\Http\Controllers\MachineController::class)
+            Route::resource('/macchine', MachineController::class)
                 ->names('machines')
                 ->parameters(['macchine' => 'machine']);
 
-            Route::resource('/pacchetti', \App\Http\Controllers\PackageController::class)
+            Route::resource('/pacchetti', PackageController::class)
                 ->names('packages')
                 ->parameters(['pacchetti' => 'package']);
+
+                Route::resource('/utenti', AdminUserController::class)
+    ->only(['index', 'show'])
+    ->names('users')
+    ->parameters(['utenti' => 'user']);
+
+Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
+    ->name('users.packages.store');
         });
 
     //------------------------------
@@ -171,7 +224,7 @@ Route::prefix('gdp-template')->group(function () {
         ->prefix('cliente')
         ->name('client.')
         ->group(function () {
-            Route::get('/', [\App\Http\Controllers\Client\DashboardController::class, 'index'])
+            Route::get('/', [DashboardController::class, 'index'])
                 ->name('dashboard');
         });
 

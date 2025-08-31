@@ -2,42 +2,63 @@
 
 namespace Database\Seeders;
 
-use App\Models\Package;
-use App\Models\User;
-use App\Models\UserPackage;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Package;
+use App\Models\UserPackage;
+use Carbon\Carbon;
 
 class UserPackageSeeder extends Seeder
 {
     public function run(): void
     {
-        // assicurati di avere qualche pacchetto
-        if (Package::count() === 0) {
-            \App\Models\Package::factory()->count(3)->create();
-        }
-
-        $clients = User::role('cliente')->get();
-        if ($clients->isEmpty()) {
+        // Evita duplicazioni su reseed
+        if (UserPackage::query()->exists()) {
+            $this->command?->warn('UserPackage ha già dati: salto creazione (idempotente).');
             return;
         }
 
+        // Assicurati di avere i pacchetti
+        if (Package::count() === 0) {
+            $this->call(PackageSeeder::class);
+        }
+        $packages = Package::all(['id','name','total_lessons']);
+
+        // Prendi i clienti
+        $clients = User::role('cliente')->get(['id']);
+        if ($clients->isEmpty()) {
+            $this->command?->warn('Nessun utente con ruolo cliente: salto.');
+            return;
+        }
+
+        $now = now();
+
         foreach ($clients as $client) {
-            // 45% dei clienti riceve un pacchetto
-            if (fake()->boolean(45)) {
-                $package = Package::inRandomOrder()->first();
+            // 60% dei clienti hanno un pacchetto ATTIVO con crediti > 0
+            if (random_int(1, 100) <= 60) {
+                $pkg = $packages->random();
+                $remaining = random_int(1, (int) $pkg->total_lessons); // almeno 1
+                UserPackage::create([
+                    'user_id'           => $client->id,
+                    'package_id'        => $pkg->id,
+                    'lessons_remaining' => $remaining,
+                    'purchased_at'      => $now->copy()->subDays(random_int(0, 90)),
+                ]);
+            }
 
-                // 70% attivo, 30% esaurito
-                $isActive = fake()->boolean(70);
-                $remaining = $isActive
-                    ? fake()->numberBetween(1, max(1, (int) $package->total_lessons))
-                    : 0;
-
-                UserPackage::factory()
-                    ->forUser($client)
-                    ->forPackage($package)
-                    ->state(['lessons_remaining' => $remaining])
-                    ->create();
+            // 30% hanno un secondo pacchetto (può essere esaurito o ancora attivo)
+            if (random_int(1, 100) <= 30) {
+                $pkg = $packages->random();
+                $remaining = random_int(0, (int) $pkg->total_lessons); // può essere 0 = scaduto
+                UserPackage::create([
+                    'user_id'           => $client->id,
+                    'package_id'        => $pkg->id,
+                    'lessons_remaining' => $remaining,
+                    'purchased_at'      => $now->copy()->subDays(random_int(30, 180)),
+                ]);
             }
         }
+
+        $this->command?->info('UserPackageSeeder: creati pacchetti per alcuni clienti (attivi + eventuali esauriti).');
     }
 }
