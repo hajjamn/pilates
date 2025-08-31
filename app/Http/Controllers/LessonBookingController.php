@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Carbon\Carbon;
+use App\Models\UserPackage;
+use Illuminate\Validation\ValidationException;
 
 class LessonBookingController extends Controller
 {
@@ -30,13 +32,15 @@ class LessonBookingController extends Controller
             ? $actor->id
             : $request->input('user_id', $actor->id);
 
-        // Validazione minima del target
+        // Validazione minima
         $request->merge(['user_id' => $targetUserId]);
         $request->validate([
             'user_id' => ['required', 'exists:users,id'],
+            'use_package' => ['nullable', 'boolean'],
+            'user_package_id' => ['nullable', 'integer'], // controllo ownership più sotto
         ]);
 
-        // Autorizzazione per ruolo
+        // Autorizzazioni
         if (!$isAdmin && $isOperator) {
             if ((int) $lesson->operator_id !== (int) $actor->id) {
                 abort(403, 'Non puoi aggiungere utenti a lezioni di altre operatrici.');
@@ -48,41 +52,86 @@ class LessonBookingController extends Controller
             }
         }
 
-        try {
-            DB::transaction(function () use ($lesson, $actor, $targetUserId) {
-                // Lock sulla lezione per serializzare la capienza
-                $locked = Lesson::whereKey($lesson->id)->lockForUpdate()->first();
+        $usePackage = (bool) $request->boolean('use_package');
 
-                // Già iscritto (attivo)?
-                $already = LessonUser::where('lesson_id', $locked->id)
+        try {
+            DB::transaction(function () use ($lesson, $actor, $targetUserId, $usePackage, $request) {
+                // 1) Lock lezione per serializzare capienza
+                $lockedLesson = Lesson::whereKey($lesson->id)->lockForUpdate()->first();
+
+                // 2) Doppione?
+                $already = LessonUser::where('lesson_id', $lockedLesson->id)
                     ->where('user_id', $targetUserId)
                     ->whereNull('deleted_at')
                     ->exists();
-
                 if ($already) {
                     abort(422, 'Sei già iscritto a questa lezione.');
                 }
 
-                // Capienza (solo attivi)
-                $activeCount = LessonUser::where('lesson_id', $locked->id)
+                // 3) Capienza
+                $activeCount = LessonUser::where('lesson_id', $lockedLesson->id)
                     ->whereNull('deleted_at')
                     ->count();
-
-                if ($activeCount >= $locked->max_clients) {
+                if ($activeCount >= $lockedLesson->max_clients) {
                     abort(422, 'La lezione è al completo.');
                 }
 
+                // 4) Se richiesto, blocca un pacchetto dell’utente e scala 1
+                $userPackageId = null;
+                $counted = false;
+
+                if ($usePackage) {
+                    // Se passato, deve appartenere al target e avere credito
+                    if ($request->filled('user_package_id')) {
+                        $pkg = UserPackage::where('id', $request->integer('user_package_id'))
+                            ->where('user_id', $targetUserId)
+                            ->lockForUpdate()
+                            ->first();
+                        if (!$pkg) {
+                            throw ValidationException::withMessages([
+                                'user_package_id' => 'Pacchetto non valido per questo utente.',
+                            ]);
+                        }
+                    } else {
+                        // Altrimenti prendi il più vecchio attivo
+                        $pkg = UserPackage::where('user_id', $targetUserId)
+                            ->where('lessons_remaining', '>', 0)
+                            ->orderBy('purchased_at')
+                            ->lockForUpdate()
+                            ->first();
+                        if (!$pkg) {
+                            throw ValidationException::withMessages([
+                                'use_package' => 'Non hai crediti disponibili nei pacchetti.',
+                            ]);
+                        }
+                    }
+
+                    if ($pkg->lessons_remaining <= 0) {
+                        throw ValidationException::withMessages([
+                            'use_package' => 'Il pacchetto selezionato non ha crediti disponibili.',
+                        ]);
+                    }
+
+                    // Scala 1 credito
+                    $pkg->decrement('lessons_remaining');
+                    $userPackageId = $pkg->id;
+                    $counted = true;
+                }
+
+                // 5) Crea prenotazione
                 LessonUser::create([
-                    'lesson_id' => $locked->id,
+                    'lesson_id' => $lockedLesson->id,
                     'user_id' => $targetUserId,
                     'attended' => false,
-                    'counted' => false,
+                    'counted' => $counted,
                     'paid' => false,
+                    'user_package_id' => $userPackageId,
                     'added_by_user_id' => $actor->id,
                 ]);
             });
+        } catch (ValidationException $ve) {
+            return back()->withErrors($ve->errors());
         } catch (QueryException $e) {
-            // In caso in futuro aggiungiamo un vincolo UNIQUE, intercettiamo 23000
             if ($e->getCode() === '23000') {
                 return back()->withErrors('Prenotazione già presente o conflitto di capienza.');
             }
@@ -91,6 +140,7 @@ class LessonBookingController extends Controller
 
         return back()->with('status', 'Iscrizione completata.');
     }
+
 
 
     public function destroy(LessonUser $booking)
@@ -115,9 +165,28 @@ class LessonBookingController extends Controller
             }
         }
 
-        $booking->delete(); // soft delete = annullata
+        DB::transaction(function () use ($booking) {
+            $lesson = Lesson::whereKey($booking->lesson_id)->lockForUpdate()->first();
+
+            // Rimborso se:
+            // - la prenotazione aveva consumato un pacchetto (counted = true, user_package_id != null)
+            // - la lezione NON è ancora iniziata
+            if ($booking->counted && $booking->user_package_id && $lesson->starts_at->isFuture()) {
+                $pkg = UserPackage::where('id', $booking->user_package_id)->lockForUpdate()->first();
+                if ($pkg) {
+                    $pkg->increment('lessons_remaining'); // restituisci 1 credito
+                }
+                // segna che non è più conteggiata
+                $booking->update(['counted' => false]);
+            }
+
+            // Soft delete = annullata
+            $booking->delete();
+        });
+
         return back()->with('status', 'Prenotazione annullata.');
     }
+
 
     private function clientCanCancel(Lesson $lesson, Carbon $nowRome, int $requiredHours = 6, string $tz = 'Europe/Rome'): bool
     {

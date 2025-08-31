@@ -129,7 +129,6 @@
                 @include('partials.flash')
                 @yield('content')
             </div>
-            @yield('content')
         </main>
 
     </div>
