@@ -26,7 +26,6 @@ class LessonBookingController extends Controller
             return back()->withErrors('La lezione è già iniziata o passata.');
         }
 
-
         $targetUserId = $actor->hasRole('cliente')
             ? $actor->id
             : $request->input('user_id', $actor->id);
@@ -44,7 +43,6 @@ class LessonBookingController extends Controller
             }
         }
         if (!$isAdmin && !$isOperator) {
-            // Cliente: può solo auto-iscriversi
             if ((int) $targetUserId !== (int) $actor->id) {
                 abort(403, 'Non puoi iscrivere altri utenti.');
             }
@@ -52,10 +50,20 @@ class LessonBookingController extends Controller
 
         try {
             DB::transaction(function () use ($lesson, $actor, $targetUserId) {
-                // Lock sulla lezione per gestire capienza senza race
+                // Lock sulla lezione per serializzare la capienza
                 $locked = Lesson::whereKey($lesson->id)->lockForUpdate()->first();
 
-                // Capienza: attivi (deleted_at NULL)
+                // Già iscritto (attivo)?
+                $already = LessonUser::where('lesson_id', $locked->id)
+                    ->where('user_id', $targetUserId)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if ($already) {
+                    abort(422, 'Sei già iscritto a questa lezione.');
+                }
+
+                // Capienza (solo attivi)
                 $activeCount = LessonUser::where('lesson_id', $locked->id)
                     ->whereNull('deleted_at')
                     ->count();
@@ -67,22 +75,23 @@ class LessonBookingController extends Controller
                 LessonUser::create([
                     'lesson_id' => $locked->id,
                     'user_id' => $targetUserId,
-                    'attended' => false,      // lezione futura
-                    'counted' => false,      // crediti dopo
-                    'paid' => false,      // pagamenti dopo
-                    'added_by_user_id' => $actor->id, // chi ha eseguito l’azione
+                    'attended' => false,
+                    'counted' => false,
+                    'paid' => false,
+                    'added_by_user_id' => $actor->id,
                 ]);
             });
         } catch (QueryException $e) {
-            // Unique (lesson_id, user_id, is_active): già iscritto
+            // In caso in futuro aggiungiamo un vincolo UNIQUE, intercettiamo 23000
             if ($e->getCode() === '23000') {
-                return back()->withErrors('Questo utente è già iscritto a questa lezione.');
+                return back()->withErrors('Prenotazione già presente o conflitto di capienza.');
             }
             throw $e;
         }
 
         return back()->with('status', 'Iscrizione completata.');
     }
+
 
     public function destroy(LessonUser $booking)
     {

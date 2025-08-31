@@ -17,6 +17,8 @@ class LessonUser extends Model
         'paid_to_user_id',
         'user_package_id',
         'counted',
+        'lesson_id',
+        'user_id'
     ];
 
     protected $casts = [
