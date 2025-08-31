@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\HomeRedirectController;
+use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
+use App\Http\Controllers\Operator\AvailabilityController as OperatorAvailabilityController;
+use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
+use App\Http\Controllers\Operator\AvailabilityChangeRequestController as OperatorAvailabilityChangeRequestController;
+use App\Http\Controllers\Admin\AvailabilityChangeRequestController as AdminAvailabilityChangeRequestController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -36,10 +41,22 @@ Route::prefix('gdp-template')->group(function () {
             ->name('calendar.lessons.index');
     });
 
+
+    //------------------------------
+    // LESSON BOOKINGS
+    //------------------------------
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::post('/lessons/{lesson}/book', [LessonBookingController::class, 'store'])
+            ->name('lessons.book');
+
+        Route::delete('/bookings/{booking}', [LessonBookingController::class, 'destroy'])
+            ->name('bookings.cancel');
+    });
+
     //------------------------------
     // ADMIN AREA
     //------------------------------
-    Route::middleware(['auth', 'verified'])
+    Route::middleware(['auth', 'verified', 'role:admin'])
         ->prefix('amministrazione')
         ->name('admin.')
         ->group(function () {
@@ -51,6 +68,29 @@ Route::prefix('gdp-template')->group(function () {
             /* Route::resource('/utenti', UserController::class)
                 ->names('users')
                 ->parameters(['utenti' => 'user']); */
+
+            Route::get('/disponibilita-settimanale', [AdminAvailabilityController::class, 'index'])
+                ->name('availability.index');
+
+            // Form/Anteprima generazione lezioni per intervallo [da, a]
+            Route::get('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'showGenerate'])
+                ->name('availability.generate.form');
+
+            // Esecuzione generazione (idempotente) nel range scelto
+            Route::post('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'generate'])
+                ->name('availability.generate.run');
+
+            Route::get('/disponibilita-settimanale/richieste', [AdminAvailabilityChangeRequestController::class, 'index'])
+                ->name('availability.requests.index');
+
+            Route::get('/disponibilita-settimanale/richieste/{acr}', [AdminAvailabilityChangeRequestController::class, 'show'])
+                ->name('availability.requests.show');
+
+            Route::post('/disponibilita-settimanale/richieste/{acr}/approve', [AdminAvailabilityChangeRequestController::class, 'approve'])
+                ->name('availability.requests.approve');
+
+            Route::post('/disponibilita-settimanale/richieste/{acr}/reject', [AdminAvailabilityChangeRequestController::class, 'reject'])
+                ->name('availability.requests.reject');
         });
 
     //------------------------------
@@ -60,6 +100,7 @@ Route::prefix('gdp-template')->group(function () {
         ->prefix('operatore')
         ->name('operator.')
         ->group(function () {
+
             Route::get('/', function () {
                 return view('operator.dashboard');
             })->name('dashboard');
@@ -67,6 +108,21 @@ Route::prefix('gdp-template')->group(function () {
             Route::resource('/operatori', OperatorController::class)
                 ->names('operators')
                 ->parameters(['operatori' => 'operator']);
+
+            Route::get('/disponibilita-settimanale', [OperatorAvailabilityController::class, 'show'])
+                ->name('availability.show');
+
+            Route::get('/disponibilita-settimanale/richieste/create', [OperatorAvailabilityChangeRequestController::class, 'create'])
+                ->name('availability.requests.create');
+
+            Route::post('/disponibilita-settimanale/richieste', [OperatorAvailabilityChangeRequestController::class, 'store'])
+                ->name('availability.requests.store');
+
+            Route::get('/disponibilita-settimanale/richieste', [OperatorAvailabilityChangeRequestController::class, 'index'])
+                ->name('availability.requests.index');
+
+            Route::get('/disponibilita-settimanale/richieste/{acr}', [OperatorAvailabilityChangeRequestController::class, 'show'])
+                ->name('availability.requests.show');
         });
 
     //------------------------------

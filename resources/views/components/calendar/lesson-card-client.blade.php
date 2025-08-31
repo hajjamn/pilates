@@ -1,62 +1,141 @@
 @props(['lesson'])
 
 @php
-    $starts = $lesson->starts_at;
-    $isPast = $starts?->isPast();
-    $isCancel = (bool) $lesson->canceled;
-    $capacity = (int) $lesson->max_clients;
-    $booked = (int) ($lesson->clients_count ?? 0);
-    $isFull = $capacity > 0 ? $booked >= $capacity : false;
-    $already = (int) ($lesson->is_booked ?? 0) > 0; // solo per clienti
 
-    $opName = $lesson->operator?->full_name ?? ($lesson->operator?->name ?? ($lesson->operator?->email ?? '—'));
+    $dt = $lesson->starts_at->locale('it');
+    $prettyDate =
+        \Illuminate\Support\Str::ucfirst($dt->isoFormat('ddd')) .
+        ' ' .
+        $dt->isoFormat('D') .
+        ' ' .
+        \Illuminate\Support\Str::ucfirst($dt->isoFormat('MMMM')); // es. "Lun 28 Agosto"
+    $startTime = $dt->isoFormat('HH:mm');
+    $endTime = $dt->copy()->addHour()->isoFormat('HH:mm');
 
-    $roomName = $lesson->room?->name ?? '—';
+    $authId = auth()->id();
+
+    // Prenotazione ATTIVA dell'utente su questa lezione (soft-delete = NULL)
+$activeBooking = \App\Models\LessonUser::where('lesson_id', $lesson->id)
+    ->where('user_id', $authId)
+    ->whereNull('deleted_at')
+    ->first();
+
+// Quanti iscritti attivi ci sono (per mostrare posti rimasti / bottone disabilitato)
+$activeCount = \App\Models\LessonUser::where('lesson_id', $lesson->id)->whereNull('deleted_at')->count();
+
+    $isFull = $activeCount >= $lesson->max_clients;
+    $seatsLeft = max(0, $lesson->max_clients - $activeCount);
 @endphp
 
-<div class="card shadow-sm mb-3" style="border-radius:14px; overflow:hidden;">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
+
+<div class="card h-100 shadow-sm">
+    <div class="card-body d-flex flex-column gap-2">
+        <div class="d-flex justify-content-between align-items-center">
             <div>
-                <div class="fw-bold" style="font-size:1.05rem;">
-                    {{ $starts?->format('H:i') }}
-                    <span class="text-muted">•</span>
-                    {{ $roomName }}
+                <div class="fw-bold">
+                    {{ \Illuminate\Support\Str::ucfirst($dt->isoFormat('ddd')) }}
+                    {{ $dt->isoFormat('D') }}
+                    {{ \Illuminate\Support\Str::ucfirst($dt->isoFormat('MMMM')) }}
                 </div>
                 <div class="text-muted">
-                    Operatore: <span class="fw-semibold">{{ $opName }}</span>
+                    {{ $lesson->starts_at->format('H:i') }}–{{ $lesson->starts_at->copy()->addHour()->format('H:i') }}
+                    @if ($lesson->room)
+                        • Sala {{ $lesson->room->name }}
+                    @endif
                 </div>
-            </div>
-
-            {{-- Badges stato --}}
-            <div class="d-flex gap-2">
-                @if ($isCancel)
-                    <span class="badge text-bg-danger">Cancellata</span>
-                @elseif($isPast)
-                    <span class="badge text-bg-secondary">Conclusa</span>
-                @elseif($isFull)
-                    <span class="badge text-bg-warning">Piena</span>
-                @else
-                    <span class="badge text-bg-success">Aperta</span>
+                @if ($lesson->operator)
+                    <div class="small text-muted">Operatrice:
+                        {{ $lesson->operator->full_name ?? $lesson->operator->email }}</div>
                 @endif
             </div>
+            <div class="text-end">
+                <div class="small">Posti: <strong>{{ $activeCount }}</strong> / {{ $lesson->max_clients }}</div>
+                <div class="small {{ $isFull ? 'text-danger' : 'text-success' }}">
+                    {{ $isFull ? 'Completa' : "Posti rimasti: $seatsLeft" }}
+                </div>
+            </div>
         </div>
 
-        <div class="mt-2 text-muted">
-            Posti: <strong>{{ $booked }}</strong> / {{ $capacity }}
-        </div>
-
-        <div class="mt-3 d-flex gap-2">
-            @if ($isCancel || $isPast)
-                <button class="btn btn-outline-secondary btn-sm" disabled>Non disponibile</button>
-            @elseif($already)
-                <button class="btn btn-outline-primary btn-sm" disabled>Già prenotata</button>
-                <button class="btn btn-outline-danger btn-sm" disabled>Disdici</button> {{-- placeholder, attiveremo più avanti --}}
-            @elseif($isFull)
-                <button class="btn btn-outline-secondary btn-sm" disabled>Lista d’attesa</button> {{-- placeholder --}}
+        <div class="mt-2">
+            @if ($activeBooking)
+                {{-- Bottone: disdetta --}}
+                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
+                    data-bs-target="#cancelModal-{{ $lesson->id }}">
+                    Annulla prenotazione
+                </button>
+            @elseif ($isFull)
+                {{-- Classe piena --}}
+                <button class="btn btn-secondary w-100" disabled>Posti esauriti</button>
             @else
-                <a class="btn btn-primary btn-sm" href="#" role="button">Prenota</a> {{-- placeholder rotta prenotazione --}}
+                {{-- Bottone: prenotati --}}
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                    data-bs-target="#bookModal-{{ $lesson->id }}">
+                    Prenotati
+                </button>
             @endif
         </div>
     </div>
 </div>
+
+{{-- MODALE: Conferma iscrizione --}}
+@if (!$activeBooking && !$isFull)
+    <div class="modal fade" id="bookModal-{{ $lesson->id }}" tabindex="-1"
+        aria-labelledby="bookLabel-{{ $lesson->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="bookLabel-{{ $lesson->id }}" class="modal-title">Conferma iscrizione</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+                <div class="modal-body">
+                    Confermi l’iscrizione alla lezione delle <strong>{{ $startTime }}</strong> di
+                    <strong>{{ $prettyDate }}</strong>?
+                    ?
+                    <div class="small text-muted mt-2">
+                        Posti rimasti: {{ $seatsLeft }} • La cancellazione è possibile solo se ci sono almeno
+                        <strong>6 ore</strong> (contate tra <strong>09:00–21:00</strong>) prima dell’inizio.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" data-bs-dismiss="modal">Annulla</button>
+                    <form method="POST" action="{{ route('lessons.book', $lesson) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-primary">Conferma iscrizione</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+{{-- MODALE: Conferma disdetta --}}
+@if ($activeBooking)
+    <div class="modal fade" id="cancelModal-{{ $lesson->id }}" tabindex="-1"
+        aria-labelledby="cancelLabel-{{ $lesson->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="cancelLabel-{{ $lesson->id }}" class="modal-title">Conferma disdetta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+                <div class="modal-body">
+                    Vuoi annullare la prenotazione per le <strong>{{ $startTime }}</strong> di
+                    <strong>{{ $prettyDate }}</strong>?
+                    ?
+                    <div class="small text-muted mt-2">
+                        Nota: le disdette dei clienti sono consentite solo se ci sono almeno
+                        <strong>6 ore</strong> lavorative (09:00–21:00) prima dell’inizio.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-light" data-bs-dismiss="modal">Mantieni</button>
+                    <form method="POST" action="{{ route('bookings.cancel', $activeBooking) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">Conferma disdetta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif

@@ -14,8 +14,9 @@ class WeeklyAvailability extends Model
         'operator_id',
         'day_of_week',
         'start_time',
+        'end_time',
         'room_id',
-        'active'
+        'active',
     ];
 
     public function room()

@@ -21,7 +21,8 @@ class LessonUser extends Model
 
     protected $casts = [
         'paid' => 'boolean',
-        'counted' => 'boolean'
+        'counted' => 'boolean',
+        'is_active' => 'boolean'
     ];
 
     public function lesson()
@@ -49,5 +50,16 @@ class LessonUser extends Model
         return $this->belongsTo(UserPackage::class, 'user_package_id');
     }
 
-
+    public function scopeActive($q)
+    {
+        return $q->whereNull('deleted_at');
+    }
+    public function scopeForLesson($q, int $lessonId)
+    {
+        return $q->where('lesson_id', $lessonId);
+    }
+    public function scopeForUser($q, int $userId)
+    {
+        return $q->where('user_id', $userId);
+    }
 }

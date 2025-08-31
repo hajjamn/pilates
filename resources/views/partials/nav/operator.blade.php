@@ -13,9 +13,10 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="{{ route('operator.dashboard') }}">Home Operatore</a>
                 </li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('operator.operators.show', auth()->id()) }}">Le
-                        mie lezioni</a></li>
-                <li class="nav-item"><a class="nav-link disabled" href="#">Calendario</a></li>
+                <li class="nav-item"><a class="nav-link"
+                        href="{{ route('operator.operators.show', auth()->id()) }}">Riepilogo</a></li>
+                <li class="nav-item"><a class="nav-link"
+                        href="{{ route('operator.availability.show') }}">Disponibilità</a></li>
             </ul>
 
             <ul class="navbar-nav ms-auto">

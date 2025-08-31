@@ -22,6 +22,11 @@ return new class extends Migration {
             $table->boolean('counted')->default(true)->comment('Indicates if lesson was deducted from user package');
             $table->timestamps();
             $table->softDeletes();
+            $table->boolean('is_active')
+                ->storedAs('CASE WHEN deleted_at IS NULL THEN 1 ELSE 0 END');
+            $table->unique(['lesson_id', 'user_id', 'is_active'], 'uniq_active_lesson_user');
+            $table->index(['lesson_id', 'deleted_at'], 'idx_lesson_deleted');
+            $table->index(['user_id', 'deleted_at'], 'idx_user_deleted');
         });
     }
 
