@@ -14,7 +14,7 @@ class UserFactory extends Factory
     {
         $first = $this->faker->firstName('male' | 'female');
         $last = $this->faker->lastName;
-        $email = strtolower($first . '.' . $last . '.' . rand(1000, 9999) . '@gmail.com');
+        $email = strtolower($first . '.' . $last . rand(1000, 9999) . '@gmail.com');
 
         return [
             'first_name' => $first,
