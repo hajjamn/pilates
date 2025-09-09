@@ -2,34 +2,30 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class DatabaseSeeder extends Seeder
+class DevelopementSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-
-        if (app()->environment('production')) {
-            $this->call(ProductionSeeder::class);
-            return;
-        }
-
-        $this->call(DevelopementSeeder::class);
-
-        /* $this->call([
+        $this->call([
             RoleSeeder::class,
             PermissionSeeder::class,
-            UserSeeder::class,
+            OperatorSeeder::class,
+            ClientSeeder::class,
             RoomSeeder::class,
             MachineSeeder::class,
             WeeklyAvailabilitySeeder::class,
-            LessonSeeder::class,
             PackageSeeder::class,
+            LessonSeeder::class,
             UserPackageSeeder::class,
             LessonUserSeeder::class,
             DigitalLessonSeeder::class,
             DigitalLessonUserSeeder::class,
-        ]); */
+        ]);
     }
 }

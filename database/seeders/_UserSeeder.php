@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
-class UserSeeder extends Seeder
+class _UserSeeder extends Seeder
 {
     public function run(): void
     {

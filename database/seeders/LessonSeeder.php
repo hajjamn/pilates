@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Lesson;
+use App\Models\Room;
 use App\Models\WeeklyAvailability;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
@@ -11,37 +12,45 @@ class LessonSeeder extends Seeder
 {
     public function run(): void
     {
-        // Da 2 settimane fa a 2 settimane avanti
-        $startDate = Carbon::today()->subWeeks(2);
-        $endDate = Carbon::today()->addWeeks(2);
+        $startDate = Carbon::today()->subWeeks(2)->startOfDay();
+        $endDate = Carbon::today()->addWeeks(2)->endOfDay();
 
-        $availabilities = WeeklyAvailability::where('active', true)->get();
+        $roomMaxById = Room::query()->pluck('max_clients', 'id');
+
+        $availabilities = WeeklyAvailability::query()
+            ->where('active', true)
+            ->get();
 
         foreach ($availabilities as $availability) {
-            $date = $startDate->copy();
+            $roomId = (int) $availability->room_id;
+            $maxClients = (int) ($roomMaxById[$roomId] ?? 0);
 
-            while ($date->lte($endDate)) {
-                // MAPPING CORRETTO: 0 = Lunedì … 6 = Domenica
-                $dowZeroMonday = $date->dayOfWeekIso - 1;
+            if ($maxClients <= 0) {
+                $this->command?->warn("Room {$roomId} con max_clients non valido. Salto le lezioni per questa availability.");
+                continue;
+            }
 
-                if ($dowZeroMonday === (int) $availability->day_of_week) {
-                    $startsAt = $date->copy()->setTimeFromTimeString($availability->start_time);
+            $weekdayIso = ((int) $availability->day_of_week) + 1;
 
-                    Lesson::firstOrCreate(
-                        [
-                            'room_id' => $availability->room_id,
-                            'operator_id' => $availability->operator_id,
-                            'starts_at' => $startsAt,
-                        ],
-                        [
-                            'max_clients' => 7,
-                            'canceled' => false,
-                            'manual_override' => false,
-                        ]
-                    );
-                }
+            $startDow = (int) $startDate->dayOfWeekIso;      // 1..7
+            $diffDays = ($weekdayIso - $startDow + 7) % 7;   // 0..6
+            $first = $startDate->copy()->addDays($diffDays);
 
-                $date->addDay();
+            for ($date = $first->copy(); $date->lte($endDate); $date->addWeek()) {
+                $startsAt = $date->copy()->setTimeFromTimeString($availability->start_time);
+
+                Lesson::firstOrCreate(
+                    [
+                        'room_id' => $roomId,
+                        'operator_id' => $availability->operator_id,
+                        'starts_at' => $startsAt,
+                    ],
+                    [
+                        'max_clients' => $maxClients,
+                        'canceled' => false,
+                        'manual_override' => false,
+                    ]
+                );
             }
         }
     }

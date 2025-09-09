@@ -22,7 +22,7 @@ class UserPackageSeeder extends Seeder
         if (Package::count() === 0) {
             $this->call(PackageSeeder::class);
         }
-        $packages = Package::all(['id','name','total_lessons']);
+        $packages = Package::all(['id', 'name', 'total_lessons']);
 
         // Prendi i clienti
         $clients = User::role('cliente')->get(['id']);
@@ -39,10 +39,10 @@ class UserPackageSeeder extends Seeder
                 $pkg = $packages->random();
                 $remaining = random_int(1, (int) $pkg->total_lessons); // almeno 1
                 UserPackage::create([
-                    'user_id'           => $client->id,
-                    'package_id'        => $pkg->id,
+                    'user_id' => $client->id,
+                    'package_id' => $pkg->id,
                     'lessons_remaining' => $remaining,
-                    'purchased_at'      => $now->copy()->subDays(random_int(0, 90)),
+                    'purchased_at' => $now->copy()->subDays(random_int(0, 90)),
                 ]);
             }
 
@@ -51,14 +51,12 @@ class UserPackageSeeder extends Seeder
                 $pkg = $packages->random();
                 $remaining = random_int(0, (int) $pkg->total_lessons); // può essere 0 = scaduto
                 UserPackage::create([
-                    'user_id'           => $client->id,
-                    'package_id'        => $pkg->id,
+                    'user_id' => $client->id,
+                    'package_id' => $pkg->id,
                     'lessons_remaining' => $remaining,
-                    'purchased_at'      => $now->copy()->subDays(random_int(30, 180)),
+                    'purchased_at' => $now->copy()->subDays(random_int(30, 180)),
                 ]);
             }
         }
-
-        $this->command?->info('UserPackageSeeder: creati pacchetti per alcuni clienti (attivi + eventuali esauriti).');
     }
 }
