@@ -15,9 +15,9 @@ class OperatorSeeder extends Seeder
 
             [
                 'first_name' => 'Ada',
-                'last_name' => 'Cognome',
-                'email' => 'ada@example.com',
-                'phone' => '0000000000',
+                'last_name' => 'Turco',
+                'email' => 'ada.turco@gmail.com',
+                'phone' => '+393345749496',
                 'birth_date' => '',
                 'roles' => ['admin', 'operatore'],
             ],

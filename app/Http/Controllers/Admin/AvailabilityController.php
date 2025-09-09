@@ -4,6 +4,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Room;
 use App\Models\WeeklyAvailability;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
@@ -301,6 +302,8 @@ class AvailabilityController extends Controller
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);
 
+        $roomMaxById = Room::pluck('max_clients', 'id');
+
         $fromDate = Carbon::createFromFormat('Y-m-d', $data['from'])->startOfDay();
         $toDate = Carbon::createFromFormat('Y-m-d', $data['to'])->endOfDay();
         $period = CarbonPeriod::create($fromDate->copy()->startOfDay(), $toDate->copy()->endOfDay());
@@ -367,11 +370,13 @@ class AvailabilityController extends Controller
                     continue;
                 }
 
+                $maxClients = (int) ($roomMaxById[$room] ?? 0);
+
                 $lesson = Lesson::create([
                     'room_id' => $room,
                     'operator_id' => (int) $slot->operator_id,
                     'starts_at' => $startsAt,
-                    'max_clients' => 7,
+                    'max_clients' => $maxClients,
                     'canceled' => false,
                     'manual_override' => false,
                 ]);

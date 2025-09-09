@@ -18,8 +18,8 @@ class WeeklyAvailabilitySeeder extends Seeder
 
         $rooms = Room::query()->pluck('id', 'name');
         $plan = [
-            // ADA (TODO: inserisci l'email reale)
-            'ada@example.com' => [
+
+            'ada.turco@gmail.com' => [
                 ['days' => ['lun', 'mer', 'ven'], 'times' => ['09:00', '10:00', '11:00'], 'room' => 'Sala Reformer'],
                 ['days' => ['mar', 'gio'], 'times' => ['13:00', '14:00'], 'room' => 'Sala Reformer'],
             ],
