@@ -9,6 +9,19 @@
             </a>
         </div>
 
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <a href="{{ route('operator.availability.show') }}" class="btn btn-outline-secondary btn-sm">
+                Mie Disponibilità
+            </a>
+            <a href="{{ route('admin.availability.requests.index') }}" class="btn btn-outline-secondary btn-sm">
+                Richieste Cambio Disponibilità
+            </a>
+            <a href="{{ route('admin.availability.generate.form') }}" class="btn btn-outline-primary btn-sm ms-auto">
+                Genera lezioni
+            </a>
+        </div>
+
+
         <form method="GET" action="{{ route('admin.availability.index') }}" class="card mb-3">
             <div class="card-body row g-2 align-items-end">
                 <div class="col-auto">
