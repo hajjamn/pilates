@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Room;
+use App\Models\User;
 use App\Models\WeeklyAvailability;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
@@ -30,10 +31,14 @@ class AvailabilityController extends Controller
             $hours[] = sprintf('%02d:00', $h);
         }
 
-        $rooms = [
-            ['id' => 1, 'label' => 'Sala A'],
-            ['id' => 2, 'label' => 'Sala B'],
-        ];
+        $rooms = Room::query()
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn($r) => ['id' => (int) $r->id, 'label' => $r->name])
+            ->values()
+            ->all();
+
+        $roomIds = array_map(fn($r) => $r['id'], $rooms);
 
         $weekParam = $request->query('week');
         if ($weekParam) {
@@ -55,7 +60,10 @@ class AvailabilityController extends Controller
             $dayKey = (int) $d['key'];
             $matrix[$dayKey] = [];
             foreach ($hours as $hour) {
-                $matrix[$dayKey][$hour] = [1 => [], 2 => []];
+                $matrix[$dayKey][$hour] = [];
+                foreach ($roomIds as $rid) {
+                    $matrix[$dayKey][$hour][$rid] = [];
+                }
             }
         }
 
@@ -68,12 +76,17 @@ class AvailabilityController extends Controller
             $dayKey = (int) $slot->day_of_week;
             $hour = Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
             $room = (int) $slot->room_id;
+
             if (!isset($matrix[$dayKey][$hour][$room])) {
                 continue;
             }
-            $name = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? '')) ?: ('Operatore #' . $slot->operator_id);
+
+            $name = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? ''))
+                ?: ('Operatore #' . $slot->operator_id);
+
             $matrix[$dayKey][$hour][$room][] = ['id' => (int) $slot->operator_id, 'name' => $name];
         }
+
 
         $lessons = Lesson::query()
             ->whereBetween('starts_at', [$weekStart->copy()->startOfDay(), $weekEnd->copy()->endOfDay()])
@@ -118,7 +131,7 @@ class AvailabilityController extends Controller
         foreach ($days as $d) {
             $dk = $d['key'];
             foreach ($hours as $h) {
-                foreach ([1, 2] as $r) {
+                foreach ($roomIds as $r) { // prima: [1, 2]
                     $ops = $matrix[$dk][$h][$r];
                     if (count($ops) > 1) {
                         $conflictMap[$dk][$h][$r] = true;
@@ -132,6 +145,7 @@ class AvailabilityController extends Controller
                 }
             }
         }
+
 
         $healthCounts = [
             'uncovered' => count($uncovered),
@@ -164,10 +178,14 @@ class AvailabilityController extends Controller
         for ($h = 9; $h <= 20; $h++) {
             $hours[] = sprintf('%02d:00', $h);
         }
-        $rooms = [
-            ['id' => 1, 'label' => 'Sala A'],
-            ['id' => 2, 'label' => 'Sala B'],
-        ];
+
+        $rooms = Room::query()
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn($r) => ['id' => (int) $r->id, 'label' => $r->name])
+            ->values()
+            ->all();
+        $roomIds = array_map(fn($r) => $r['id'], $rooms);
 
         $from = $request->query('from');
         $to = $request->query('to');
@@ -228,10 +246,14 @@ class AvailabilityController extends Controller
 
             $previewByDay[$dateStr] = [];
             foreach ($hours as $hstr) {
-                $previewByDay[$dateStr][$hstr] = [
-                    1 => ['operators' => [], 'already_exists' => [], 'has_existing_lesson' => false],
-                    2 => ['operators' => [], 'already_exists' => [], 'has_existing_lesson' => false],
-                ];
+                $previewByDay[$dateStr][$hstr] = [];
+                foreach ($roomIds as $rid) {
+                    $previewByDay[$dateStr][$hstr][$rid] = [
+                        'operators' => [],
+                        'already_exists' => [],
+                        'has_existing_lesson' => false,
+                    ];
+                }
             }
 
             $slots = $availByDow->get($dow, collect());
@@ -239,6 +261,8 @@ class AvailabilityController extends Controller
                 $hour = Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
                 $startsAt = Carbon::parse($dateStr . ' ' . $slot->start_time);
                 $room = (int) $slot->room_id;
+                if (!in_array($room, $roomIds, true))
+                    continue;
                 $name = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? '')) ?: ('Operatore #' . $slot->operator_id);
 
                 $keyExact = $slot->operator_id . '|' . $room . '|' . $startsAt->toDateTimeString();
@@ -258,7 +282,7 @@ class AvailabilityController extends Controller
             }
 
             foreach ($hours as $hstr) {
-                foreach ([1, 2] as $roomId) {
+                foreach ($roomIds as $roomId) {
                     $ops = $previewByDay[$dateStr][$hstr][$roomId]['operators'];
                     if (count($ops) > 1) {
                         $summary['conflicts_availability']++;
@@ -283,6 +307,23 @@ class AvailabilityController extends Controller
             }
         }
 
+        $operatorIds = collect($previewByDay)
+            ->flatMap(
+                fn($hoursMap) => collect($hoursMap)
+                    ->flatMap(fn($byRoom) => collect($byRoom)->flatMap(fn($cell) => [
+                        ...collect($cell['operators'] ?? [])->pluck('id')->all(),
+                        ...collect($cell['already_exists'] ?? [])->pluck('operator_id')->all(),
+                    ]))
+            )
+            ->unique()
+            ->values();
+
+        $operatorNames = User::whereIn('id', $operatorIds)
+            ->get(['id', 'first_name', 'last_name'])
+            ->mapWithKeys(fn($u) => [
+                $u->id => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')) ?: ('Operatore #' . $u->id)
+            ]);
+
         return view('admin.availability.generate', [
             'from' => $from,
             'to' => $to,
@@ -292,6 +333,7 @@ class AvailabilityController extends Controller
             'summary' => $summary,
             'preview_by_day' => $previewByDay,
             'warnings' => $warnings,
+            'operator_names' => $operatorNames,
         ]);
     }
 

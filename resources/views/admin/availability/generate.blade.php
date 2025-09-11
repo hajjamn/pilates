@@ -70,6 +70,9 @@
 
         @if (!empty($preview_by_day))
             @foreach ($preview_by_day as $date => $hoursMap)
+                @php
+                    $roomNames = collect($rooms)->pluck('label', 'id');
+                @endphp
                 <div class="card mb-4">
                     <div class="card-header fw-semibold">
                         {{ \Carbon\Carbon::parse($date)->isoFormat('dddd D MMMM YYYY') }}
@@ -80,61 +83,55 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 90px;">Ora</th>
-                                        <th class="text-center">Sala A</th>
-                                        <th class="text-center">Sala B</th>
+                                        @foreach ($rooms as $room)
+                                            <th class="text-center">{{ $room['label'] }}</th>
+                                        @endforeach
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($hours as $h)
-                                        @php
-                                            $a = $hoursMap[$h][1] ?? [
-                                                'operators' => [],
-                                                'already_exists' => [],
-                                                'has_existing_lesson' => false,
-                                            ];
-                                            $b = $hoursMap[$h][2] ?? [
-                                                'operators' => [],
-                                                'already_exists' => [],
-                                                'has_existing_lesson' => false,
-                                            ];
-                                        @endphp
                                         <tr>
                                             <th>{{ $h }}</th>
-                                            <td class="text-center">
-                                                @if ($a['has_existing_lesson'])
-                                                    <span class="badge bg-warning text-dark me-1">Occupata</span>
-                                                @endif
-                                                @if (empty($a['operators']) && empty($a['already_exists']))
-                                                    <span class="text-muted">—</span>
-                                                @else
-                                                    @foreach ($a['operators'] as $op)
-                                                        <span class="badge bg-primary me-1">{{ $op['name'] }}</span>
-                                                    @endforeach
-                                                    @foreach ($a['already_exists'] as $ex)
-                                                        <span
-                                                            class="badge bg-success me-1">#{{ $ex['operator_id'] }}</span>
-                                                    @endforeach
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if ($b['has_existing_lesson'])
-                                                    <span class="badge bg-warning text-dark me-1">Occupata</span>
-                                                @endif
-                                                @if (empty($b['operators']) && empty($b['already_exists']))
-                                                    <span class="text-muted">—</span>
-                                                @else
-                                                    @foreach ($b['operators'] as $op)
-                                                        <span class="badge bg-secondary me-1">{{ $op['name'] }}</span>
-                                                    @endforeach
-                                                    @foreach ($b['already_exists'] as $ex)
-                                                        <span
-                                                            class="badge bg-success me-1">#{{ $ex['operator_id'] }}</span>
-                                                    @endforeach
-                                                @endif
-                                            </td>
+
+                                            @foreach ($rooms as $room)
+                                                @php
+                                                    $rid = $room['id'];
+                                                    $cell = $hoursMap[$h][$rid] ?? [
+                                                        'operators' => [],
+                                                        'already_exists' => [],
+                                                        'has_existing_lesson' => false,
+                                                    ];
+                                                @endphp
+
+                                                <td class="text-center">
+                                                    @if ($cell['has_existing_lesson'])
+                                                        <span class="badge bg-warning text-dark me-1">Occupata</span>
+                                                    @endif
+
+                                                    @if (empty($cell['operators']) && empty($cell['already_exists']))
+                                                        <span class="text-muted">—</span>
+                                                    @else
+                                                        {{-- Operatori candidati da creare --}}
+                                                        @foreach ($cell['operators'] as $op)
+                                                            <span class="badge bg-primary me-1">{{ $op['name'] }}</span>
+                                                        @endforeach
+
+                                                        {{-- Lezioni già esistenti (mostra nome se disponibile) --}}
+                                                        @foreach ($cell['already_exists'] as $ex)
+                                                            @php
+                                                                $oid = $ex['operator_id'] ?? null;
+                                                                $oname = $operator_names[$oid] ?? '#' . $oid;
+                                                            @endphp
+                                                            <span class="badge bg-success me-1">{{ $oname }}</span>
+                                                        @endforeach
+                                                    @endif
+                                                </td>
+                                            @endforeach
+
                                         </tr>
                                     @endforeach
                                 </tbody>
+
                             </table>
                         </div>
                     </div>
@@ -158,8 +155,9 @@
                         <div class="card-body">
                             <ul class="mb-0">
                                 @foreach (array_slice($res['skipped_conflicts'], 0, 20) as $c)
-                                    <li>{{ $c['date'] }} {{ $c['time'] }} — Sala {{ $c['room_id'] }} (op:
-                                        #{{ $c['operator_id'] }})</li>
+                                    @php $rn = $roomNames[$c['room_id']] ?? ('Sala '.$c['room_id']); @endphp
+                                    <li>{{ $c['date'] }} {{ $c['time'] }} — {{ $rn }} (op:
+                                        {{ $operator_names[$c['operator_id']] ?? '#' . $c['operator_id'] }})</li>
                                 @endforeach
                             </ul>
                         </div>

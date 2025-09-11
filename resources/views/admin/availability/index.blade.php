@@ -4,9 +4,6 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h4 mb-0">Disponibilità settimanali — panoramica</h1>
-            <a href="{{ route('admin.availability.generate.form') }}" class="btn btn-outline-primary">
-                Genera lezioni
-            </a>
         </div>
 
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -89,21 +86,25 @@
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 90px;">Ora</th>
-                                    <th class="text-center">Sala A</th>
-                                    <th class="text-center">Sala B</th>
+                                    @foreach ($rooms as $room)
+                                        <th class="text-center">{{ $room['label'] }}</th>
+                                    @endforeach
                                 </tr>
                             </thead>
+                            <tbody>
                             <tbody>
                                 @foreach ($hours as $hour)
                                     <tr>
                                         <th>{{ $hour }}</th>
 
-                                        @foreach ([1, 2] as $roomId)
+                                        @foreach ($rooms as $room)
                                             @php
+                                                $roomId = $room['id'];
                                                 $ops = $matrix[$d['key']][$hour][$roomId] ?? [];
                                                 $isConflict = $conflict_map[$d['key']][$hour][$roomId] ?? false;
                                                 $isOccupied = !empty($occupied[$date][$hour][$roomId] ?? []);
                                             @endphp
+
                                             <td class="text-center">
                                                 @if ($isOccupied)
                                                     <span class="badge bg-warning text-dark me-1">Lezione</span>
@@ -128,6 +129,8 @@
                                     </tr>
                                 @endforeach
                             </tbody>
+
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -150,11 +153,14 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    $roomNames = collect($rooms)->pluck('label', 'id');
+                                @endphp
                                 @foreach ($uncovered as $u)
                                     <tr>
                                         <td>{{ $u['date'] }}</td>
                                         <td>{{ $u['time'] }}</td>
-                                        <td>{{ $u['room_id'] == 1 ? 'Sala A' : 'Sala B' }}</td>
+                                        <td>{{ $roomNames[$u['room_id']] ?? 'Sala ' . $u['room_id'] }}</td>
                                         <td>#{{ $u['operator_id'] }} — {{ $u['operator_name'] }}</td>
                                         <td>{{ $u['lesson_id'] }}</td>
                                     </tr>
