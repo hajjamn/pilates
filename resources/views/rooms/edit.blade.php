@@ -29,6 +29,17 @@
                 <textarea class="form-control" id="description" name="description">{{ old('description', $room->description) }}</textarea>
             </div>
 
+            <div class="mb-3">
+                <label for="max_clients" class="form-label">Capienza massima</label>
+                <input type="number" id="max_clients" name="max_clients"
+                    class="form-control @error('max_clients') is-invalid @enderror" min="1" max="100"
+                    step="1" required value="{{ old('max_clients', $room->max_clients) }}" inputmode="numeric">
+                <div class="form-text">Valori consentiti: 1–100.</div>
+                @error('max_clients')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
             <button type="submit" class="btn btn-primary">Aggiorna</button>
             <a href="{{ route('rooms.index') }}" class="btn btn-secondary">Annulla</a>
         </form>
