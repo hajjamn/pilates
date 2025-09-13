@@ -24,7 +24,7 @@ use App\Http\Controllers\Admin\UserPackageController as AdminUserPackageControll
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('gdp-template')->group(function () {
+Route::prefix('ada-turco-pilates')->group(function () {
 
     //------------------------------
     // HOME
@@ -53,6 +53,10 @@ Route::prefix('gdp-template')->group(function () {
     // LESSON BOOKINGS
     //------------------------------
     Route::middleware(['auth', 'verified'])->group(function () {
+
+        Route::get('/lessons/create', [LessonManageController::class, 'create'])
+            ->name('lessons.create')
+            ->middleware('role:admin');
 
         Route::post('/lessons/{lesson}/book', [LessonBookingController::class, 'store'])
             ->name('lessons.book');
@@ -112,6 +116,7 @@ Route::prefix('gdp-template')->group(function () {
         // Update (stessa rotta per entrambi; i permessi/campi saranno gestiti nel controller)
         Route::patch('/lessons/{lesson}', [LessonManageController::class, 'update'])
             ->name('lessons.update');
+
     });
 
 

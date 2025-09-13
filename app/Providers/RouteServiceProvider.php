@@ -18,7 +18,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = 'gdp-template/';
+    public const HOME = 'ada-turco-pilates/';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.

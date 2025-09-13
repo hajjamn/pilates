@@ -369,91 +369,102 @@ $nextUrl = route(
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;">
             <div style="opacity:.7;font-size:.95rem;">
+                Giorno selezionato: <strong>{{ Carbon::parse($selectedDay)->translatedFormat('l d/m/Y') }}</strong>
+            </div>
+
+            <div style="opacity:.7;font-size:.95rem;">
                 <p>Totale lezioni trovate: <strong>{{ $lessons->count() }}</strong></p>
             </div>
-            <div style="opacity:.7;font-size:.95rem;">
-                Giorno selezionato: <strong>{{ \Carbon\Carbon::parse($selectedDay)->translatedFormat('l d/m/Y') }}</strong>
-            </div>
+
+            @if ($mode === 'admin')
+                <div class="d-flex justify-content-end mb-2">
+                    <a href="{{ route('lessons.create') }}" class="btn btn-success btn-sm">
+                        <i class="fa-solid fa-plus"></i> Crea lezione
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- CLIENT: card view --}}
         @if ($mode === 'client')
-    {{-- invariato --}}
-    <div class="row row-cols-1 row-cols-md-2 g-3">
-        @forelse($lessons as $lesson)
-            <div class="col">
-                <x-calendar.lesson-card-client :lesson="$lesson" />
+            {{-- invariato --}}
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                @forelse($lessons as $lesson)
+                    <div class="col">
+                        <x-calendar.lesson-card-client :lesson="$lesson" />
+                    </div>
+                @empty
+                    <div class="col">
+                        <div class="alert alert-light border text-muted">Nessuna lezione per il giorno selezionato.</div>
+                    </div>
+                @endforelse
             </div>
-        @empty
-            <div class="col">
-                <div class="alert alert-light border text-muted">Nessuna lezione per il giorno selezionato.</div>
+        @else
+            {{-- OPERATOR/ADMIN: card di gestione --}}
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                @forelse($lessons as $lesson)
+                    <div class="col">
+                        <x-calendar.lesson-card-manage :lesson="$lesson" :mode="$mode" />
+                    </div>
+                @empty
+                    <div class="col">
+                        <div class="alert alert-light border text-muted">Nessuna lezione per il giorno selezionato.</div>
+                    </div>
+                @endforelse
             </div>
-        @endforelse
-    </div>
-@else
-    {{-- OPERATOR/ADMIN: card di gestione --}}
-    <div class="row row-cols-1 row-cols-md-2 g-3">
-        @forelse($lessons as $lesson)
-            <div class="col">
-                <x-calendar.lesson-card-manage :lesson="$lesson" :mode="$mode" />
+        @endif
+
+        @if (in_array($mode, ['admin', 'operator']))
+            <div class="card my-3">
+                <div class="card-body">
+                    <form method="POST" action="{{ route('lessons.store') }}" class="row g-2 align-items-end">
+                        @csrf
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small">Sala</label>
+                            <select name="room_id" class="form-select form-select-sm" required>
+                                @foreach ($rooms as $room)
+                                    <option value="{{ $room->id }}">{{ $room->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        @if ($mode === 'admin')
+                            <div class="col-12 col-md-3">
+                                <label class="form-label small">Operatore</label>
+                                <select name="operator_id" class="form-select form-select-sm" required>
+                                    @foreach ($operators as $op)
+                                        @php
+                                            $label =
+                                                method_exists($op, 'getFullNameAttribute') || isset($op->full_name)
+                                                    ? $op->full_name ?? ''
+                                                    : trim(($op->first_name ?? '') . ' ' . ($op->last_name ?? ''));
+                                            $label = $label !== '' ? $label : $op->email;
+                                        @endphp
+                                        <option value="{{ $op->id }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small">Data/Ora inizio</label>
+                            <input type="datetime-local" name="starts_at" class="form-control form-control-sm" required>
+                        </div>
+
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small">Capienza</label>
+                            <input type="number" name="max_clients" min="1" max="200"
+                                class="form-control form-control-sm" required>
+                        </div>
+
+                        <div class="col-6 col-md-1 text-end">
+                            <button class="btn btn-primary btn-sm w-100">Crea</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        @empty
-            <div class="col">
-                <div class="alert alert-light border text-muted">Nessuna lezione per il giorno selezionato.</div>
-            </div>
-        @endforelse
-    </div>
-@endif
-
-        @if(in_array($mode, ['admin','operator']))
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="POST" action="{{ route('lessons.store') }}" class="row g-2 align-items-end">
-      @csrf
-
-      <div class="col-12 col-md-3">
-        <label class="form-label small">Sala</label>
-        <select name="room_id" class="form-select form-select-sm" required>
-          @foreach($rooms as $room)
-            <option value="{{ $room->id }}">{{ $room->name }}</option>
-          @endforeach
-        </select>
-      </div>
-
-      @if($mode === 'admin')
-      <div class="col-12 col-md-3">
-        <label class="form-label small">Operatore</label>
-        <select name="operator_id" class="form-select form-select-sm" required>
-          @foreach($operators as $op)
-            @php
-              $label = method_exists($op, 'getFullNameAttribute') || isset($op->full_name)
-                ? ($op->full_name ?? '')
-                : trim(($op->first_name ?? '').' '.($op->last_name ?? ''));
-              $label = $label !== '' ? $label : $op->email;
-            @endphp
-            <option value="{{ $op->id }}">{{ $label }}</option>
-          @endforeach
-        </select>
-      </div>
-      @endif
-
-      <div class="col-12 col-md-3">
-        <label class="form-label small">Data/Ora inizio</label>
-        <input type="datetime-local" name="starts_at" class="form-control form-control-sm" required>
-      </div>
-
-      <div class="col-6 col-md-2">
-        <label class="form-label small">Capienza</label>
-        <input type="number" name="max_clients" min="1" max="200" class="form-control form-control-sm" required>
-      </div>
-
-      <div class="col-6 col-md-1 text-end">
-        <button class="btn btn-primary btn-sm w-100">Crea</button>
-      </div>
-    </form>
-  </div>
-</div>
-@endif
+        @endif
 
     </div>
 @endsection

@@ -20,7 +20,7 @@
     <div class="container" style="max-width:900px;">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="h4 mb-0">
-                Lezione • {{ $lesson->starts_at?->translatedFormat('d MMMM Y, H:mm') }}
+                Lezione - {{ $lesson->starts_at?->isoFormat('D MMMM YYYY, HH:mm') }}
             </h1>
 
             <div class="d-flex gap-2">

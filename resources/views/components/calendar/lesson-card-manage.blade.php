@@ -24,7 +24,7 @@
         <div class="d-flex flex-column">
             <div class="d-flex align-items-center gap-2">
                 <div class="fw-bold" style="font-size:1.05rem;">
-                    {{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}
+                    {{ $lesson->starts_at?->isoFormat('HH:mm — D MMM') }}
                 </div>
                 <span class="badge" style="background:{{ $statusStyle[0] }}; color:{{ $statusStyle[1] }}; font-weight:600;">
                     {{ $statusLabel }}
