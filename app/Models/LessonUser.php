@@ -18,13 +18,15 @@ class LessonUser extends Model
         'user_package_id',
         'counted',
         'lesson_id',
-        'user_id'
+        'user_id',
+        'contacted'
     ];
 
     protected $casts = [
         'paid' => 'boolean',
         'counted' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'contacted' => 'boolean'
     ];
 
     public function lesson()

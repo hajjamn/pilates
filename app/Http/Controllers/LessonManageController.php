@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreLessonRequest;
 use App\Models\Lesson;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class LessonManageController extends Controller
 {
@@ -76,5 +77,43 @@ class LessonManageController extends Controller
     private function canManageLesson($actor, Lesson $lesson): bool
     {
         return $actor->hasRole('admin') || ($actor->hasRole('operatore') && (int) $lesson->operator_id === (int) $actor->id);
+    }
+
+    public function show(Lesson $lesson)
+    {
+        $user = Auth::user();
+
+        $isAdmin = $user->hasRole('admin');
+        $isOperatorOwner = $user->hasRole('operatore') && (int) $lesson->operator_id === (int) $user->id;
+        abort_unless($isAdmin || $isOperatorOwner, 403);
+
+        $lesson->load([
+            'room:id,name',
+            'operator:id,first_name,last_name,email',
+            'lessonUsers.user:id,first_name,last_name,email,phone',
+        ])->loadCount('clients');
+
+        $mode = $isAdmin ? 'admin' : 'operator';
+
+        return view('manage.lessons.show', [
+            'lesson' => $lesson,
+            'mode' => $mode,
+        ]);
+    }
+
+
+    public function edit(Lesson $lesson)
+    {
+        return response('LESSON EDIT (full) placeholder — ID: ' . $lesson->id, 200);
+    }
+
+    public function editLite(Lesson $lesson)
+    {
+        return response('LESSON EDIT-LITE placeholder — ID: ' . $lesson->id, 200);
+    }
+
+    public function update(Request $request, Lesson $lesson)
+    {
+        return back()->with('status', 'Update placeholder eseguito (nessuna modifica salvata).');
     }
 }

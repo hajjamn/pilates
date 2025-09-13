@@ -14,9 +14,9 @@ class UserPackageController extends Controller
     public function store(Request $request, User $user)
     {
         $request->validate([
-            'package_id'        => ['required','integer','exists:packages,id'],
-            'lessons_remaining' => ['nullable','integer','min:1','max:9999'],
-            'purchased_at'      => ['nullable','date'],
+            'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'lessons_remaining' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'purchased_at' => ['nullable', 'date'],
         ]);
 
         $pkg = Package::findOrFail($request->integer('package_id'));
@@ -25,12 +25,12 @@ class UserPackageController extends Controller
             : (int) $pkg->total_lessons;
 
         UserPackage::create([
-            'user_id'           => $user->id,
-            'package_id'        => $pkg->id,
+            'user_id' => $user->id,
+            'package_id' => $pkg->id,
             'lessons_remaining' => $remaining,
-            'purchased_at'      => $request->input('purchased_at') ?: now(),
+            'purchased_at' => $request->input('purchased_at') ?: now(),
         ]);
 
-        return back()->with('status', 'Pacchetto aggiunto a '.$user->email);
+        return back()->with('status', 'Pacchetto aggiunto a ' . $user->email);
     }
 }

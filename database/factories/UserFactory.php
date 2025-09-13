@@ -16,12 +16,48 @@ class UserFactory extends Factory
         $last = $this->faker->lastName;
         $email = strtolower($first . '.' . $last . rand(1000, 9999) . '@gmail.com');
 
+        $prefixes = [
+            '320',
+            '327',
+            '328',
+            '329',
+            '330',
+            '331',
+            '333',
+            '334',
+            '335',
+            '336',
+            '337',
+            '338',
+            '339',
+            '360',
+            '361',
+            '362',
+            '363',
+            '366',
+            '368',
+            '370',
+            '371',
+            '373',
+            '375',
+            '376',
+            '377',
+            '379',
+            '380',
+            '388',
+            '389',
+        ];
+
+        $pref = $this->faker->randomElement($prefixes);
+        $rest = $this->faker->numerify('#######'); // 7 cifre
+        $phone = '+39' . $pref . $rest;
+
         return [
             'first_name' => $first,
             'last_name' => $last,
             'email' => $email,
             'password' => Hash::make('1234'),
-            'phone' => $this->faker->numerify('+39 3## #######'), // Or numerify('+39 3## #######')
+            'phone' => $phone,
             'birth_date' => $this->faker->date('Y-m-d', '-18 years'),
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),

@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -31,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'birth_date' => 'date',
+        'phone' => 'string'
     ];
 
     public function lessonUsers()
@@ -108,4 +110,23 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $query->role('admin');
     }
+
+    // app/Models/User.php
+
+    // app/Models/User.php
+    public function setPhoneAttribute($value)
+    {
+        $raw = trim((string) $value);
+
+        if ($raw === '') {
+            $this->attributes['phone'] = null;
+            return;
+        }
+
+        // Usa l'helper del pacchetto: normalizza in E.164 o ritorna null se invalido
+        $e164 = phone($raw, 'IT', 'E164'); // ← helper di laravel-phone
+        $this->attributes['phone'] = $e164 ?: null;
+    }
+
+
 }

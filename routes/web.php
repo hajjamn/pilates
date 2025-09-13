@@ -71,14 +71,17 @@ Route::prefix('gdp-template')->group(function () {
             Route::post('/bookings/{booking}/toggle-paid', [LessonBookingController::class, 'togglePaid'])
                 ->name('bookings.togglePaid');
 
+            Route::post('/bookings/{booking}/toggle-contacted', [LessonBookingController::class, 'toggleContacted'])
+                ->name('bookings.toggleContacted');
+
             Route::get('/clients/search', [LessonBookingController::class, 'searchClients'])
                 ->name('clients.search');
         });
     });
 
     //------------------------------
-// LESSON MANAGE (create/cancel)
-//------------------------------
+    // LESSON MANAGE
+    //------------------------------
     Route::middleware(['auth', 'verified', 'role:operatore|admin'])->group(function () {
         // crea lezione manuale
         Route::post('/lessons', [LessonManageController::class, 'store'])
@@ -94,6 +97,21 @@ Route::prefix('gdp-template')->group(function () {
         Route::delete('/lessons/{lesson}', [LessonManageController::class, 'destroy'])
             ->name('lessons.destroy')
             ->middleware('role:admin');
+
+        Route::get('/lessons/{lesson}', [LessonManageController::class, 'show'])
+            ->name('lessons.show');
+
+        // Edit completa (admin)
+        Route::get('/lessons/{lesson}/edit', [LessonManageController::class, 'edit'])
+            ->name('lessons.edit');
+
+        // Edit limitata (operatore)
+        Route::get('/lessons/{lesson}/edit-lite', [LessonManageController::class, 'editLite'])
+            ->name('lessons.editLite');
+
+        // Update (stessa rotta per entrambi; i permessi/campi saranno gestiti nel controller)
+        Route::patch('/lessons/{lesson}', [LessonManageController::class, 'update'])
+            ->name('lessons.update');
     });
 
 
@@ -137,18 +155,12 @@ Route::prefix('gdp-template')->group(function () {
                 return view('admin.dashboard');
             })->name('dashboard');
 
-            /* Route::resource('/utenti', UserController::class)
-                ->names('users')
-                ->parameters(['utenti' => 'user']); */
-
             Route::get('/disponibilita-settimanale', [AdminAvailabilityController::class, 'index'])
                 ->name('availability.index');
 
-            // Form/Anteprima generazione lezioni per intervallo [da, a]
             Route::get('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'showGenerate'])
                 ->name('availability.generate.form');
 
-            // Esecuzione generazione (idempotente) nel range scelto
             Route::post('/disponibilita-settimanale/genera', [AdminAvailabilityController::class, 'generate'])
                 ->name('availability.generate.run');
 
@@ -176,13 +188,13 @@ Route::prefix('gdp-template')->group(function () {
                 ->names('packages')
                 ->parameters(['pacchetti' => 'package']);
 
-                Route::resource('/utenti', AdminUserController::class)
-    ->only(['index', 'show'])
-    ->names('users')
-    ->parameters(['utenti' => 'user']);
+            Route::resource('/utenti', AdminUserController::class)
+                ->only(['index', 'show'])
+                ->names('users')
+                ->parameters(['utenti' => 'user']);
 
-Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
-    ->name('users.packages.store');
+            Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
+                ->name('users.packages.store');
         });
 
     //------------------------------

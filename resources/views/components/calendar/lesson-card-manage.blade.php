@@ -49,13 +49,28 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
+
+            {{-- Pulsante Dettagli --}}
+@if($mode === 'admin' || (auth()->user()?->hasRole('operatore') && (int)auth()->id() === (int)$lesson->operator_id))
+    <a href="{{ route('lessons.show', $lesson) }}" class="btn btn-outline-primary btn-sm">
+        Dettagli
+    </a>
+@endif
+
     {{-- ... titolo+badge stato ... --}}
     @if($mode === 'admin' || (auth()->user()?->hasRole('operatore') && (int)auth()->id() === (int)$lesson->operator_id))
         @if(!$isCanceled)
-            <form method="POST" action="{{ route('lessons.cancel', $lesson) }}" class="d-inline">
-                @csrf
-                <button class="btn btn-outline-danger btn-sm">Annulla</button>
-            </form>
+            <form method="POST" action="{{ route('lessons.cancel', $lesson) }}" class="d-inline cancel-lesson-form">
+    @csrf
+    <button type="button"
+        class="btn btn-outline-danger btn-sm open-cancel-modal"
+        data-lesson-id="{{ $lesson->id }}"
+        data-lesson-time="{{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}"
+        data-lesson-room="{{ $roomName }}"
+        data-lesson-operator="{{ $operatorName }}"
+    >Annulla</button>
+</form>
+
         @else
             <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
                 @csrf
@@ -75,74 +90,128 @@
             <div class="table-responsive">
                 <table class="table align-middle m-0">
                     <thead>
+                        @if($isCanceled)
+                        <tr class="small text-muted">
+            <th>Cliente</th>
+            <th>Contatti</th>
+            <th>Contattato</th>
+            <th style="width:1%"></th>
+        </tr>
+                        @else
                         <tr class="small text-muted">
                             <th>Cliente</th>
                             <th>Contatti</th>
                             <th>Pacchetto</th>
-                            <th>Paid</th>
-                            <th>Attended</th>
+                            <th>Pagata</th>
+                            <th>Presenza</th>
                             <th style="width:1%"></th>
                         </tr>
+                        @endif
                     </thead>
                     <tbody>
                         @foreach($bookings as $b)
-                            @php
-                                $u = $b->user;
-                                $fullName = trim(($u->first_name ?? '').' '.($u->last_name ?? '')) ?: ($u->email ?? 'Utente #'.$u->id);
-                                $pkg = $b->userPackage;
-                                $pkgLabel = $pkg?->package?->name ? ($pkg->package->name.' (rimasti: '.$pkg->lessons_remaining.')') : null;
-                            @endphp
+                        @php
+    $u = $b->user;
+    $fullName = trim(($u->first_name ?? '').' '.($u->last_name ?? '')) ?: ($u->email ?? 'Utente #'.$u->id);
+    $pkg = $b->userPackage;
+    $pkgLabel = $pkg?->package?->name ? ($pkg->package->name.' (rimasti: '.$pkg->lessons_remaining.')') : null;
+
+    $subject = 'Annullamento lezione '.$lesson->starts_at->format('d/m H:i');
+    $bodyTxt = 'Ciao '.($u->first_name ?? '').",\nla lezione del ".$lesson->starts_at->format('d/m H:i')." è stata annullata. Contattaci per riprogrammare.";
+    $mailto  = $u->email
+        ? 'mailto:'.$u->email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($bodyTxt)
+        : null;
+
+
+    $e164     = $u->phone;                                // es. +393331234567
+    $waDigits = $e164 ? preg_replace('/\D+/', '', $e164)  // -> 393331234567
+                      : null;
+    $waLink   = $waDigits ? 'https://wa.me/'.$waDigits.'?text='.rawurlencode($bodyTxt) : null;
+@endphp
+
                             <tr data-booking-id="{{ $b->id }}">
                                 <td class="fw-semibold">
-                                    @if($mode === 'admin')
-                                        <a href="{{ route('admin.users.show', $u) }}" class="text-decoration-none">
-                                            {{ $fullName }}
-                                        </a>
-                                    @else
-                                        {{ $fullName }}
-                                    @endif
-                                </td>
-                                <td class="small">
-                                    @if($isCanceled)
-                                        {{-- Per lezioni annullate mostriamo subito contatti --}}
-                                        <div>{{ $u->phone ?? '—' }}</div>
-                                        <div><a href="mailto:{{ $u->email }}">{{ $u->email }}</a></div>
-                                    @else
-                                        <span class="text-muted">Email:</span> <a href="mailto:{{ $u->email }}">{{ $u->email }}</a>
-                                        @if(!empty($u->phone)) · <span class="text-muted">Tel:</span> {{ $u->phone }} @endif
-                                    @endif
-                                </td>
-                                <td class="small">
-                                    @if($pkgLabel)
-                                        <span class="badge text-bg-light">{{ $pkgLabel }}</span>
-                                    @else
-                                        <span class="text-muted">—</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <button
-                                        class="btn btn-sm toggle-paid"
-                                        data-url="{{ route('bookings.togglePaid', $b) }}"
-                                        @if($isCanceled) disabled @endif
-                                    >
-                                        {{ $b->paid ? 'Paid' : 'Unpaid' }}
-                                    </button>
-                                </td>
-                                <td>
-                                    <button
-                                        class="btn btn-sm toggle-attended"
-                                        data-url="{{ route('bookings.toggleAttended', $b) }}"
-                                        @if($isCanceled) disabled @endif
-                                    >
-                                        {{ $b->attended ? '✓ Attended' : '—' }}
-                                    </button>
-                                </td>
-                                <td class="text-end">
-                                    <form method="POST" action="{{ route('bookings.cancel', $b) }}" class="d-inline remove-booking-form">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
-                                    </form>
-                                </td>
+    @if($mode === 'admin')
+        <a href="{{ route('admin.users.show', $u) }}" class="text-decoration-none">{{ $fullName }}</a>
+    @else
+        {{ $fullName }}
+    @endif
+</td>
+
+@if($isCanceled)
+  <td class="small">
+    @if($u->email)
+      <a href="{{ $mailto }}" class="text-decoration-none me-3">
+        <i class="fa-solid fa-envelope me-1"></i>{{ $u->email }}
+      </a>
+    @endif
+
+    @if($u->phone)
+      @if($waLink)
+        <a href="{{ $waLink }}" target="_blank" rel="noopener" class="text-decoration-none">
+          <i class="fa-brands fa-whatsapp me-1"></i>{{ $u->phone }}
+        </a>
+      @else
+        {{-- Numero formattato ma (prob.) non WhatsApp: mostro comunque il telefono --}}
+        <span><i class="fa-brands fa-whatsapp me-1"></i>{{ $u->phone }}</span>
+      @endif
+    @endif
+
+    @unless($u->email || $u->phone)
+      <span class="text-muted">—</span>
+    @endunless
+  </td>
+
+  <td>
+    <button type="button"
+            class="btn btn-outline-secondary btn-sm toggle-contacted"
+            data-url="{{ route('bookings.toggleContacted', $b) }}">
+      {{ $b->contacted ? '✓' : 'X' }}
+    </button>
+  </td>
+@else
+{{-- ramo normale: contatti + pacchetto + paid + attended --}}
+  <td class="small">
+    <div>
+    <span class="text-muted">Email:</span>
+    @if($u->email)
+      <a href="mailto:{{ $u->email }}">{{ $u->email }}</a>
+    @else
+      <span class="text-muted">—</span>
+    @endif
+    </div>
+    <div>
+    <span class="text-muted">Tel:</span>
+    @if($u->phone)
+      @if($waLink)
+        <a href="{{ $waLink }}" target="_blank" rel="noopener" class="text-decoration-none">
+          <i class="fa-brands fa-whatsapp me-1"></i>{{ $u->phone }}
+        </a>
+      @else
+        {{-- Numero formattato ma (prob.) non WhatsApp: mostro comunque il telefono --}}
+        <span><i class="fa-brands fa-whatsapp me-1"></i>{{ $u->phone }}</span>
+      @endif
+    @endif
+    </div>
+  </td>
+    <td>
+        <button class="btn btn-primary btn-sm toggle-paid" data-url="{{ route('bookings.togglePaid', $b) }}" type="button">
+            {{ $b->paid ? '✓' : 'X' }}
+        </button>
+    </td>
+    <td>
+        <button type="button" class="btn btn-primary btn-sm toggle-attended" data-url="{{ route('bookings.toggleAttended', $b) }}">
+            {{ $b->attended ? '✓' : 'X' }}
+        </button>
+    </td>
+@endif
+
+<td class="text-end">
+    <form method="POST" action="{{ route('bookings.cancel', $b) }}" class="d-inline remove-booking-form">
+        @csrf @method('DELETE')
+        <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
+    </form>
+</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -191,6 +260,32 @@
             </form>
         @endif
     </div>
+
+    @once
+<div class="modal fade" id="lessonCancelModal" tabindex="-1" aria-labelledby="lessonCancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="lessonCancelModalLabel">Conferma annullamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        <p>Sei sicuro di voler annullare questa lezione?</p>
+        <ul class="list-unstyled small text-muted mb-0">
+          <li><strong>Quando:</strong> <span id="cancel-lesson-time">—</span></li>
+          <li><strong>Sala:</strong> <span id="cancel-lesson-room">—</span></li>
+          <li><strong>Operatore:</strong> <span id="cancel-lesson-operator">—</span></li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Chiudi</button>
+        <button type="button" class="btn btn-danger" id="confirmLessonCancelBtn">Annulla lezione</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endonce
+
 </div>
 
 @once
@@ -233,7 +328,7 @@
                         try{
                             const res = await fetchJSON(url, { method:'POST' });
                             const paid = !!res?.booking?.paid;
-                            btn.textContent = paid ? 'Paid' : 'Unpaid';
+                            btn.textContent = paid ? '✓' : 'X';
                         }catch(err){
                             alert(err.response?.message || 'Errore nel toggle paid');
                         }finally{
@@ -250,13 +345,30 @@
                         try{
                             const res = await fetchJSON(url, { method:'POST' });
                             const attended = !!res?.booking?.attended;
-                            btn.textContent = attended ? '✓ Attended' : '—';
+                            btn.textContent = attended ? '✓' : 'X';
                         }catch(err){
                             alert(err.response?.message || 'Errore nel toggle attended');
                         }finally{
                             btn.disabled = false;
                         }
                     }
+
+                    // Toggle Contacted
+if(t.closest('.toggle-contacted')){
+    e.preventDefault();
+    const btn = t.closest('.toggle-contacted');
+    const url = btn.dataset.url;
+    btn.disabled = true;
+    try{
+        const res = await fetchJSON(url, { method:'POST' });
+        const contacted = !!res?.booking?.contacted;
+        btn.textContent = contacted ? '✓' : 'X';
+    }catch(err){
+        alert(err.response?.message || 'Errore nel toggle contacted');
+    }finally{
+        btn.disabled = false;
+    }
+}
                 });
 
                 // Rimozione (submit normale va bene, ma intercetto per UX senza reload)
@@ -397,6 +509,45 @@
                     });
                 });
             })();
+
+
+            // --- Cancel modal logic ---
+let currentCancelForm = null;
+
+const cancelModalEl = document.getElementById('lessonCancelModal');
+const cancelModal = cancelModalEl && (window.bootstrap
+    ? new window.bootstrap.Modal(cancelModalEl)
+    : null);
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.open-cancel-modal');
+    if (!btn) return;
+
+    e.preventDefault();
+    currentCancelForm = btn.closest('form');
+
+    // Riempie i dettagli
+    const tEl = document.getElementById('cancel-lesson-time');
+    const rEl = document.getElementById('cancel-lesson-room');
+    const oEl = document.getElementById('cancel-lesson-operator');
+    if (tEl) tEl.textContent = btn.dataset.lessonTime || '—';
+    if (rEl) rEl.textContent = btn.dataset.lessonRoom || '—';
+    if (oEl) oEl.textContent = btn.dataset.lessonOperator || '—';
+
+    // Mostra modale (fallback: confirm nativo se bootstrap non è disponibile)
+    if (cancelModal) {
+        cancelModal.show();
+    } else if (confirm('Annullare questa lezione?')) {
+        currentCancelForm?.submit();
+    }
+});
+
+document.getElementById('confirmLessonCancelBtn')?.addEventListener('click', () => {
+    if (currentCancelForm) {
+        currentCancelForm.submit();
+    }
+});
+
         </script>
     @endpush
 @endonce

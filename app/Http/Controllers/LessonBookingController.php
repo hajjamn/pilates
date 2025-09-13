@@ -19,14 +19,8 @@ class LessonBookingController extends Controller
 {
     public function __construct(private BookingService $bookingService)
     {
-        // Nessuna registrazione manuale: Laravel risolve BookingService via DI.
     }
 
-    /**
-     * === TUO METODO ESISTENTE ===
-     * Iscrizione self-service (client) o via operator/admin (vecchio flusso).
-     * NON MODIFICATO.
-     */
     public function store(Request $request, Lesson $lesson)
     {
         $actor = Auth::user();
@@ -153,13 +147,6 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Iscrizione completata.');
     }
 
-    /**
-     * === NUOVO ===
-     * Aggiunta "gestita" (operatore/admin) di un cliente ad una lezione.
-     * - Consente aggiunta anche a lezioni PASSATE.
-     * - Vietata se lezione CANCELLED.
-     * Richiede rotte protette da role:operatore|admin.
-     */
     public function storeManaged(ManagedBookingRequest $request, Lesson $lesson)
     {
         $actor = Auth::user();
@@ -195,11 +182,6 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Cliente aggiunto alla lezione.');
     }
 
-    /**
-     * === TUO METODO ESISTENTE ===
-     * Rimozione prenotazione (soft delete) con rimborsi crediti per future.
-     * NON MODIFICATO.
-     */
     public function destroy(LessonUser $booking)
     {
         $actor = Auth::user();
@@ -213,7 +195,6 @@ class LessonBookingController extends Controller
             abort(403);
         }
 
-        // Regola 6 ore lavorative solo per i clienti che cancellano sé stessi
         if ($isOwner && !$isAdmin && !$isOperator) {
             $tz = config('app.timezone', 'Europe/Rome');
             $nowRome = now($tz);
@@ -244,10 +225,6 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Prenotazione annullata.');
     }
 
-    /**
-     * === NUOVO ===
-     * Toggle attended (operatore/admin).
-     */
     public function toggleAttended(LessonUser $booking)
     {
         $actor = Auth::user();
@@ -265,10 +242,6 @@ class LessonBookingController extends Controller
         ]);
     }
 
-    /**
-     * === NUOVO ===
-     * Toggle paid (operatore/admin).
-     */
     public function togglePaid(LessonUser $booking)
     {
         $actor = Auth::user();
@@ -286,11 +259,25 @@ class LessonBookingController extends Controller
         ]);
     }
 
-    /**
-     * === NUOVO ===
-     * Autocomplete dei clienti + loro pacchetti attivi.
-     * Param: ?q= (nome/email/telefono)
-     */
+    public function toggleContacted(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking->contacted = !$booking->contacted;
+        $booking->save();
+
+        return response()->json([
+            'booking' => [
+                'id' => $booking->id,
+                'contacted' => (bool) $booking->contacted,
+            ],
+        ]);
+    }
     public function searchClients(Request $request)
     {
         $actor = Auth::user();
