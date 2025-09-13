@@ -15,28 +15,60 @@ class LessonManageController extends Controller
     public function store(StoreLessonRequest $request)
     {
         $user = Auth::user();
-
         $data = $request->validated();
 
-        // Operatore: può creare solo per sé stesso
+        // Operatore semplice → forza se stesso
         if ($user->hasRole('operatore') && !$user->hasRole('admin')) {
             $data['operator_id'] = $user->id;
         } else {
-            // admin: se non passato, può impostare a sé o lasciarlo null (meglio richiederlo in form)
+            // Admin: se non passato, di default assegna a sé
             $data['operator_id'] = $data['operator_id'] ?? $user->id;
         }
 
+        // ----------------------------
+        // CHECK CONFLITTI APP-LEVEL
+        // ----------------------------
+        $roomConflict = Lesson::where('room_id', $data['room_id'])
+            ->where('starts_at', $data['starts_at'])
+            ->where('canceled', false)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($roomConflict) {
+            return back()
+                ->withErrors(['starts_at' => 'Conflitto: esiste già una lezione in questa sala a quell’ora.'])
+                ->withInput();
+        }
+
+        $operatorConflict = Lesson::where('operator_id', $data['operator_id'])
+            ->where('starts_at', $data['starts_at'])
+            ->where('canceled', false)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($operatorConflict) {
+            return back()
+                ->withErrors(['starts_at' => 'Conflitto: l’operatore è già assegnato a un’altra lezione a quell’ora.'])
+                ->withInput();
+        }
+
+        // ----------------------------
+        // CREAZIONE
+        // ----------------------------
         $lesson = Lesson::create([
             'room_id' => $data['room_id'],
             'operator_id' => $data['operator_id'],
             'starts_at' => $data['starts_at'],
             'max_clients' => $data['max_clients'],
             'canceled' => false,
-            'manual_override' => true, // creazione manuale ⇒ abilita override capienza se vuoi
+            'manual_override' => true,
         ]);
 
-        return back()->with('status', 'Lezione creata.');
+        return redirect()
+            ->route('lessons.show', $lesson)
+            ->with('status', 'Lezione creata.');
     }
+
 
     // annulla (non elimina) la lezione
     public function cancel(Lesson $lesson)
