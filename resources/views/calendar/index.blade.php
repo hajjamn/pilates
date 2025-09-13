@@ -376,13 +376,20 @@ $nextUrl = route(
                 <p>Totale lezioni trovate: <strong>{{ $lessons->count() }}</strong></p>
             </div>
 
-            @if ($mode === 'admin')
-                <div class="d-flex justify-content-end mb-2">
+            <div class="d-flex justify-content-end mb-2">
+                @if ($mode === 'admin')
                     <a href="{{ route('lessons.create') }}" class="btn btn-success btn-sm">
                         <i class="fa-solid fa-plus"></i> Crea lezione
                     </a>
-                </div>
-            @endif
+                @elseif($mode === 'operator')
+                    <a href="{{ route('lessons.createLite') }}" class="btn btn-success btn-sm">
+                        <i class="fa-solid fa-plus"></i> Crea lezione (lite)
+                    </a>
+                @endif
+            </div>
+
+
+
         </div>
 
         {{-- CLIENT: card view --}}

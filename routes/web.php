@@ -54,10 +54,6 @@ Route::prefix('ada-turco-pilates')->group(function () {
     //------------------------------
     Route::middleware(['auth', 'verified'])->group(function () {
 
-        Route::get('/lessons/create', [LessonManageController::class, 'create'])
-            ->name('lessons.create')
-            ->middleware('role:admin');
-
         Route::post('/lessons/{lesson}/book', [LessonBookingController::class, 'store'])
             ->name('lessons.book');
 
@@ -88,6 +84,16 @@ Route::prefix('ada-turco-pilates')->group(function () {
     //------------------------------
     Route::middleware(['auth', 'verified', 'role:operatore|admin'])->group(function () {
         // crea lezione manuale
+
+        Route::get('/lessons/create', [LessonManageController::class, 'create'])
+            ->name('lessons.create')
+            ->middleware('role:admin');
+
+
+        Route::get('/lessons/create-lite', [LessonManageController::class, 'createLite'])
+            ->name('lessons.createLite');
+
+
         Route::post('/lessons', [LessonManageController::class, 'store'])
             ->name('lessons.store');
 
@@ -116,6 +122,10 @@ Route::prefix('ada-turco-pilates')->group(function () {
         // Update (stessa rotta per entrambi; i permessi/campi saranno gestiti nel controller)
         Route::patch('/lessons/{lesson}', [LessonManageController::class, 'update'])
             ->name('lessons.update');
+
+        Route::patch('/lessons/{lesson}/lite', [LessonManageController::class, 'updateLite'])
+            ->name('lessons.updateLite')
+            ->whereNumber('lesson');
 
     });
 

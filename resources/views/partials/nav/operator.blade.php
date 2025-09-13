@@ -11,8 +11,6 @@
 
         <div class="collapse navbar-collapse" id="navOperator">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('operator.dashboard') }}">Home Operatore</a>
-                </li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('calendar.lessons.index') }}">Calendario
                         lezioni</a></li>
                 {{-- voce unica Disponibilità (porta alla pagina operatore) --}}

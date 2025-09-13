@@ -4,7 +4,11 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h4 mb-0">Le mie richieste</h1>
-            <a href="{{ route('operator.availability.requests.create') }}" class="btn btn-primary">Nuova richiesta</a>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a href="{{ route('operator.availability.requests.create') }}" class="btn btn-primary">Nuova richiesta</a>
+                <a href="{{ route('operator.availability.show') }}" class="ms-3 btn btn-outline-secondary">Torna alla
+                    vista</a>
+            </div>
         </div>
 
         <div class="card">

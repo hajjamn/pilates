@@ -337,5 +337,31 @@ class LessonManageController extends Controller
         ]);
     }
 
+    public function createLite(Request $request)
+    {
+        $user = Auth::user();
+
+        // Solo operatore (non admin)
+        if (!($user->hasRole('operatore') && !$user->hasRole('admin'))) {
+            abort(403);
+        }
+
+        // Liste minime (operator_id è implicito = utente corrente)
+        $rooms = Room::select('id', 'name')->orderBy('name')->get();
+
+        // Default opzionali dalla query (?room_id=…&starts_at=…)
+        $defaults = [
+            'room_id' => $request->query('room_id'),
+            'starts_at' => $request->query('starts_at'), // es. 2025-09-14T09:00
+            'max_clients' => 7,
+        ];
+
+        return view('manage.lessons.create-lite', [
+            'rooms' => $rooms,
+            'defaults' => $defaults,
+            'mode' => 'operator',
+        ]);
+    }
+
 
 }
