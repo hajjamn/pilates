@@ -1,34 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container py-5">
+    <div class="container py-5 text-center">
+        <h1 class="mb-4">✨ Benvenuto al Centro Pilates - Ada Turco ✨</h1>
 
-        <h3>🔍 Asset Tests</h3>
+        <p class="lead text-muted mb-5">
+            Un luogo dedicato al benessere, al movimento e all’equilibrio.
+            Scopri i nostri corsi di Pilates e inizia oggi il tuo percorso.
+        </p>
 
-        <div class="mb-3">
-            <strong>Bootstrap CSS Test:</strong><br>
-            <button class="btn btn-primary">This should be a blue Bootstrap button</button>
+        <div class="mt-4">
+            <a href="{{ route('register') }}" class="btn btn-primary btn-lg me-2">
+                Iscriviti Ora
+            </a>
+            <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-lg">
+                Accedi
+            </a>
         </div>
 
-        <div class="mb-3">
-            <strong>Bootstrap JS Test (Collapse):</strong><br>
-            <p>
-                <a class="btn btn-secondary" data-bs-toggle="collapse" href="#collapseTest" role="button"
-                    aria-expanded="false" aria-controls="collapseTest">
-                    Toggle Collapsible
-                </a>
-            </p>
-            <div class="collapse" id="collapseTest">
-                <div class="card card-body">
-                    ✅ If you're reading this, Bootstrap JS is working!
-                </div>
-            </div>
+        <div class="mt-5 text-muted small">
+            <p>Hai domande? Contattaci e saremo felici di aiutarti.</p>
         </div>
-
-        <div class="mb-3">
-            <strong>Font Awesome Icon Test:</strong><br>
-            <i class="fas fa-check-circle fa-2x text-success"></i> If you see a green check icon, Font Awesome is working!
-        </div>
-
     </div>
 @endsection
