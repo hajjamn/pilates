@@ -26,7 +26,7 @@ use App\Http\Controllers\Admin\UserPackageController as AdminUserPackageControll
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('ada-turco-pilates')->group(function () {
+Route::group([], function () {
 
     //------------------------------
     // HOME
