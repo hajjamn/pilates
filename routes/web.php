@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Client\ClientLessonController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\LessonBookingController;
@@ -253,6 +254,10 @@ Route::prefix('ada-turco-pilates')->group(function () {
         ->group(function () {
             Route::get('/', [DashboardController::class, 'index'])
                 ->name('dashboard');
+
+            Route::get('/lezioni/{lesson}', [ClientLessonController::class, 'show'])
+                ->whereNumber('lesson')
+                ->name('lessons.show');
         });
 
     require __DIR__ . '/auth.php';

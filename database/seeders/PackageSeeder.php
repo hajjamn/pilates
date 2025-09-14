@@ -10,9 +10,8 @@ class PackageSeeder extends Seeder
     public function run(): void
     {
         $defs = [
-            ['name' => 'Lezione singola', 'total_lessons' => 1,  'price' => 25.00],
-            ['name' => 'Pacchetto 5',     'total_lessons' => 5,  'price' => 110.00],
-            ['name' => 'Pacchetto 10',    'total_lessons' => 10, 'price' => 200.00],
+            ['name' => 'Lezione singola', 'total_lessons' => 1, 'price' => 25.00],
+            ['name' => 'Pacchetto Basic', 'total_lessons' => 8, 'price' => 110.00],
         ];
 
         foreach ($defs as $d) {

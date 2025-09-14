@@ -204,26 +204,40 @@ class LessonBookingController extends Controller
         }
 
         DB::transaction(function () use ($booking) {
+            // 1) Lock lezione
             $lesson = Lesson::whereKey($booking->lesson_id)->lockForUpdate()->first();
 
-            // Rimborso se:
-            // - la prenotazione aveva consumato un pacchetto (counted = true, user_package_id != null)
-            // - la lezione NON è ancora iniziata
+            // 2) Pulisci eventuali vecchi "duplicati" soft-deleted per (lesson_id, user_id)
+            //    così non collide con l'indice UNIQUE su is_active=0
+            LessonUser::withTrashed()
+                ->where('lesson_id', $booking->lesson_id)
+                ->where('user_id', $booking->user_id)
+                ->whereNotNull('deleted_at')
+                ->forceDelete();
+
+            // 3) Eventuale rimborso crediti se prenotazione conteggiata e lezione futura
             if ($booking->counted && $booking->user_package_id && $lesson->starts_at->isFuture()) {
                 $pkg = UserPackage::where('id', $booking->user_package_id)->lockForUpdate()->first();
                 if ($pkg) {
-                    $pkg->increment('lessons_remaining'); // restituisci 1 credito
+                    $pkg->increment('lessons_remaining');
                 }
-                // segna che non è più conteggiata
                 $booking->update(['counted' => false]);
             }
 
-            // Soft delete = annullata
+            // 4) Soft-delete della prenotazione corrente (ora non collide)
             $booking->delete();
         });
 
-        return back()->with('status', 'Prenotazione annullata.');
+        // ⬇️ Redirect differenziato
+        if ($actor->hasRole('cliente')) {
+            return redirect()
+                ->route('client.dashboard')
+                ->with('status', 'Prenotazione annullata con successo.');
+        }
+
+        return back()->with('status', 'Prenotazione annullata con successo.');
     }
+
 
     public function toggleAttended(LessonUser $booking)
     {
