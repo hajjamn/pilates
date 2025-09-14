@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use App\Models\User;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,7 +18,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/admin';
+    public const HOME = 'ada-turco-pilates/';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
@@ -34,6 +35,21 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
+
+        Route::bind('operator', function ($value) {
+            $user = User::findOrFail($value);
+
+            // Se è admin, consenti sempre (così puoi "recuperare" ruoli errati)
+            if (auth()->check() && auth()->user()->hasRole('admin')) {
+                return $user;
+            }
+
+            // Altrimenti, dev’essere proprio un operatore
+            abort_unless($user->hasRole('operatore'), 404);
+
+            return $user;
+        });
+
     }
 
     /**

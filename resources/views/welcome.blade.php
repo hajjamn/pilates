@@ -1,69 +1,81 @@
 @extends('layouts.app')
 
 @section('content')
+    <style>
+        :root {
+            --bs-primary: #798C7B;
+            /* verde principale */
+            --bs-primary-rgb: 121, 140, 123;
+            --bs-secondary: #A4B4A5;
+            /* verde secondario */
+            --bs-secondary-rgb: 164, 180, 165;
+            --bs-light: #F4F4F2;
+            /* background */
+            --bs-light-rgb: 244, 244, 242;
+            --bs-body-bg: #F4F4F2;
+        }
+
+        .hero {
+            background: linear-gradient(180deg, rgba(121, 140, 123, .15), rgba(121, 140, 123, 0));
+            border-radius: 1.25rem;
+        }
+
+        .card-soft {
+            background: #fff;
+            border: 1px solid #C2CDC3;
+            border-radius: 1rem;
+        }
+
+        .btn-pill {
+            border-radius: 50rem;
+        }
+
+        .logo {
+            height: 100px;
+            /* da 64 → 100 */
+            max-height: 120px;
+            /* limite su schermi grandi */
+        }
+
+        @media (min-width: 768px) {
+            .logo {
+                height: 120px;
+            }
+        }
+    </style>
+
     <div class="container py-5">
-        <h2 class="mb-4">🧪 Local Dev Checklist</h2>
-
-        <ul class="list-group">
-            <li class="list-group-item">
-                ✅ <code>composer install</code>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>npm install</code>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>cp .env.example .env</code>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>php artisan key:generate</code>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>php artisan migrate --seed</code> <small class="text-muted">(if needed)</small>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>npm run dev</code> <small class="text-muted">(or <code>build</code> for production)</small>
-            </li>
-            <li class="list-group-item">
-                ✅ <code>php artisan serve</code>
-            </li>
-        </ul>
-
-        <div class="mt-4">
-            <strong>Env Notes:</strong>
-            <ul>
-                <li>Edit <code>.env</code> to set <code>APP_NAME</code>, <code>APP_URL</code>, etc.</li>
-                <li>Confirm DB credentials & mail settings if needed</li>
-            </ul>
-        </div>
-
-        <hr class="my-5">
-
-        <h3>🔍 Asset Tests</h3>
-
-        <div class="mb-3">
-            <strong>Bootstrap CSS Test:</strong><br>
-            <button class="btn btn-primary">This should be a blue Bootstrap button</button>
-        </div>
-
-        <div class="mb-3">
-            <strong>Bootstrap JS Test (Collapse):</strong><br>
-            <p>
-                <a class="btn btn-secondary" data-bs-toggle="collapse" href="#collapseTest" role="button"
-                    aria-expanded="false" aria-controls="collapseTest">
-                    Toggle Collapsible
-                </a>
+        <div class="hero p-4 p-md-5 text-center">
+            <img src="{{ Vite::asset('resources/img/logo.jpeg') }}" alt="Centro Pilates – Ada Turco" class="logo mb-3">
+            <h1 class="h3 mb-2">Centro Pilates – Ada Turco</h1>
+            <p class="text-muted mb-4">
+                Prenota le lezioni, gestisci i tuoi crediti e segui i progressi, tutto dal tuo smartphone.
             </p>
-            <div class="collapse" id="collapseTest">
-                <div class="card card-body">
-                    ✅ If you're reading this, Bootstrap JS is working!
-                </div>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ route('register') }}" class="btn btn-primary btn-lg btn-pill px-4">Iscriviti ora</a>
+                <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-lg btn-pill px-4">Accedi</a>
             </div>
         </div>
 
-        <div class="mb-3">
-            <strong>Font Awesome Icon Test:</strong><br>
-            <i class="fas fa-check-circle fa-2x text-success"></i> If you see a green check icon, Font Awesome is working!
+        <div class="row g-3 mt-4">
+            <div class="col-12 col-md-4">
+                <div class="card-soft p-3 h-100">
+                    <div class="fw-semibold">Calendario settimanale</div>
+                    <small class="text-muted">Disponibilità in tempo reale e prenotazione in pochi tap.</small>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card-soft p-3 h-100">
+                    <div class="fw-semibold">Promemoria</div>
+                    <small class="text-muted">Ricevi notifiche sulle tue lezioni.</small>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card-soft p-3 h-100">
+                    <div class="fw-semibold">Area personale</div>
+                    <small class="text-muted">Crediti, storico prenotazioni e dettagli abbonamento.</small>
+                </div>
+            </div>
         </div>
-
     </div>
 @endsection
