@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ManagedBookingRequest;
 use App\Models\Lesson;
 use App\Models\LessonUser;
 use App\Models\User;
@@ -12,9 +13,14 @@ use Illuminate\Database\QueryException;
 use Carbon\Carbon;
 use App\Models\UserPackage;
 use Illuminate\Validation\ValidationException;
+use App\Services\BookingService;
 
 class LessonBookingController extends Controller
 {
+    public function __construct(private BookingService $bookingService)
+    {
+    }
+
     public function store(Request $request, Lesson $lesson)
     {
         $actor = Auth::user();
@@ -141,7 +147,40 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Iscrizione completata.');
     }
 
+    public function storeManaged(ManagedBookingRequest $request, Lesson $lesson)
+    {
+        $actor = Auth::user();
 
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        try {
+            $booking = $this->bookingService->addBooking(
+                lesson: $lesson,
+                clientUserId: (int) $request->integer('user_id'),
+                markPaid: (bool) $request->boolean('paid'),
+                usePackage: (bool) $request->boolean('use_package'),
+                userPackageId: $request->input('user_package_id'),
+                actor: $actor
+            );
+        } catch (ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'errors' => $e->errors()], 422);
+            }
+            return back()->withErrors($e->errors());
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'booking' => $booking,
+                'message' => 'Cliente aggiunto alla lezione.',
+            ]);
+        }
+
+        return back()->with('status', 'Cliente aggiunto alla lezione.');
+    }
 
     public function destroy(LessonUser $booking)
     {
@@ -156,7 +195,6 @@ class LessonBookingController extends Controller
             abort(403);
         }
 
-        // Regola 6 ore lavorative solo per i clienti che cancellano sé stessi
         if ($isOwner && !$isAdmin && !$isOperator) {
             $tz = config('app.timezone', 'Europe/Rome');
             $nowRome = now($tz);
@@ -166,27 +204,145 @@ class LessonBookingController extends Controller
         }
 
         DB::transaction(function () use ($booking) {
+            // 1) Lock lezione
             $lesson = Lesson::whereKey($booking->lesson_id)->lockForUpdate()->first();
 
-            // Rimborso se:
-            // - la prenotazione aveva consumato un pacchetto (counted = true, user_package_id != null)
-            // - la lezione NON è ancora iniziata
+            // 2) Pulisci eventuali vecchi "duplicati" soft-deleted per (lesson_id, user_id)
+            //    così non collide con l'indice UNIQUE su is_active=0
+            LessonUser::withTrashed()
+                ->where('lesson_id', $booking->lesson_id)
+                ->where('user_id', $booking->user_id)
+                ->whereNotNull('deleted_at')
+                ->forceDelete();
+
+            // 3) Eventuale rimborso crediti se prenotazione conteggiata e lezione futura
             if ($booking->counted && $booking->user_package_id && $lesson->starts_at->isFuture()) {
                 $pkg = UserPackage::where('id', $booking->user_package_id)->lockForUpdate()->first();
                 if ($pkg) {
-                    $pkg->increment('lessons_remaining'); // restituisci 1 credito
+                    $pkg->increment('lessons_remaining');
                 }
-                // segna che non è più conteggiata
                 $booking->update(['counted' => false]);
             }
 
-            // Soft delete = annullata
+            // 4) Soft-delete della prenotazione corrente (ora non collide)
             $booking->delete();
         });
 
-        return back()->with('status', 'Prenotazione annullata.');
+        // ⬇️ Redirect differenziato
+        if ($actor->hasRole('cliente')) {
+            return redirect()
+                ->route('client.dashboard')
+                ->with('status', 'Prenotazione annullata con successo.');
+        }
+
+        return back()->with('status', 'Prenotazione annullata con successo.');
     }
 
+
+    public function toggleAttended(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking = $this->bookingService->toggleAttended($booking);
+
+        return response()->json([
+            'ok' => true,
+            'booking' => $booking,
+        ]);
+    }
+
+    public function togglePaid(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking = $this->bookingService->togglePaid($booking, $actor);
+
+        return response()->json([
+            'ok' => true,
+            'booking' => $booking,
+        ]);
+    }
+
+    public function toggleContacted(LessonUser $booking)
+    {
+        $actor = Auth::user();
+        $lesson = $booking->lesson;
+
+        if (!$this->canManageLesson($actor, $lesson)) {
+            abort(403);
+        }
+
+        $booking->contacted = !$booking->contacted;
+        $booking->save();
+
+        return response()->json([
+            'booking' => [
+                'id' => $booking->id,
+                'contacted' => (bool) $booking->contacted,
+            ],
+        ]);
+    }
+    public function searchClients(Request $request)
+    {
+        $actor = Auth::user();
+        if (!$actor->hasAnyRole(['operatore', 'admin'])) {
+            abort(403);
+        }
+
+        $q = trim((string) $request->query('q', ''));
+
+        $users = User::role('cliente')
+            ->when($q !== '', function ($qq) use ($q) {
+                $like = '%' . str_replace(' ', '%', $q) . '%';
+                $qq->where(function ($w) use ($like) {
+                    $w->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('phone', 'like', $like);
+                });
+            })
+            ->orderBy('last_name')
+            ->limit(20)
+            ->get(['id', 'first_name', 'last_name', 'email', 'phone']);
+
+        $packages = UserPackage::query()
+            ->whereIn('user_id', $users->pluck('id'))
+            ->where('lessons_remaining', '>', 0)
+            ->with('package:id,name')
+            ->get(['id', 'user_id', 'package_id', 'lessons_remaining']);
+
+        $byUser = $packages->groupBy('user_id');
+
+        $result = $users->map(function ($u) use ($byUser) {
+            return [
+                'id' => $u->id,
+                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+                'email' => $u->email,
+                'phone' => $u->phone,
+                'packages' => ($byUser[$u->id] ?? collect())->map(function ($p) {
+                    return [
+                        'id' => $p->id,
+                        'label' => $p->package?->name . ' (rimasti: ' . $p->lessons_remaining . ')',
+                        'lessons_remaining' => $p->lessons_remaining,
+                    ];
+                })->values(),
+            ];
+        })->values();
+
+        return response()->json(['ok' => true, 'data' => $result]);
+    }
+
+    // ===== Helpers esistenti/nuovi =====
 
     private function clientCanCancel(Lesson $lesson, Carbon $nowRome, int $requiredHours = 6, string $tz = 'Europe/Rome'): bool
     {
@@ -225,5 +381,11 @@ class LessonBookingController extends Controller
         }
 
         return $minutes;
+    }
+
+    private function canManageLesson(User $actor, Lesson $lesson): bool
+    {
+        return $actor->hasRole('admin')
+            || ($actor->hasRole('operatore') && (int) $lesson->operator_id === (int) $actor->id);
     }
 }

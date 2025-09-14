@@ -2,59 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        return view('profile.edit', ['user' => $request->user()]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => ['nullable', 'phone:IT'],
+            'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
+        ]);
+
+        $emailChanged = ($data['email'] !== $user->email);
+
+        // campi base
+        $user->fill([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'phone' => $data['phone'] ?? null,       // normalizzato dal mutator
+            'birth_date' => $data['birth_date'] ?? null,
+        ]);
+
+        // cambio email ⇒ invalida verifica
+        if ($emailChanged) {
+            $user->email = $data['email'];
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        if ($emailChanged && $user instanceof MustVerifyEmail) {
+            $user->sendEmailVerificationNotification();
+
+            return back()->with('success', 'Email aggiornata. Ti abbiamo inviato un nuovo link di verifica.');
+        }
+
+        return back()->with('success', 'Profilo aggiornato.');
     }
 
-    /**
-     * Delete the user's account.
-     */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validateWithBag('userDeletion', [
+        $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
 
         Auth::logout();
-
-        $user->delete();
-
+        $user->delete(); // Soft delete abilitato
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect()->route('home.redirect')->with('status', 'Account eliminato.');
     }
 }

@@ -11,12 +11,17 @@
 
         <div class="collapse navbar-collapse" id="navOperator">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('operator.dashboard') }}">Home Operatore</a>
-                </li>
-                <li class="nav-item"><a class="nav-link"
-                        href="{{ route('operator.operators.show', auth()->id()) }}">Riepilogo</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('calendar.lessons.index') }}">Calendario
+                        lezioni</a></li>
+                {{-- voce unica Disponibilità (porta alla pagina operatore) --}}
                 <li class="nav-item"><a class="nav-link"
                         href="{{ route('operator.availability.show') }}">Disponibilità</a></li>
+                {{-- opzionali utili per l’operatore --}}
+                <li class="nav-item"><a class="nav-link"
+                        href="{{ route('operator.operators.show', auth()->id()) }}">Riepilogo</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('operator.clients.create') }}">Crea cliente</a>
+                </li>
             </ul>
 
             <ul class="navbar-nav ms-auto">

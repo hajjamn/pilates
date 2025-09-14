@@ -4,8 +4,39 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h4 mb-0">Proponi modifiche — {{ $operatorName }}</h1>
+            <i>TODO: admin puo' aggiungere modifiche per gli altri?</i>
             <a href="{{ route('operator.availability.show') }}" class="btn btn-outline-secondary">Torna alla vista</a>
         </div>
+
+        {{-- 🔹 NEW: mappa colori per le stanze --}}
+        @php
+            $badgePalette = [
+                'bg-primary',
+                'bg-secondary',
+                'bg-success',
+                'bg-danger',
+                'bg-warning text-dark',
+                'bg-info text-dark',
+                'bg-dark',
+                'bg-light text-dark',
+            ];
+            $roomBadgeClass = [];
+            $i = 0;
+            foreach ($legend ?? [] as $rid => $info) {
+                $roomBadgeClass[$rid] = $badgePalette[$i % count($badgePalette)];
+                $i++;
+            }
+        @endphp
+
+        {{-- 🔹 NEW: legenda dinamica in alto (se disponibile) --}}
+        @if (!empty($legend))
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                @foreach ($legend as $rid => $info)
+                    <span class="badge {{ $roomBadgeClass[$rid] ?? 'bg-secondary' }}">{{ $info['abbr'] }}</span>
+                    <span class="me-3">{{ $info['name'] }}</span>
+                @endforeach
+            </div>
+        @endif
 
         @if (session('status'))
             <div class="alert alert-success">{{ session('status') }}</div>
@@ -56,8 +87,13 @@
                                                 class="form-select form-select-sm availability-select"
                                                 data-original="{{ $current }}">
                                                 <option value="" @selected($current === '')>—</option>
-                                                <option value="1" @selected($current === '1')>Sala A</option>
-                                                <option value="2" @selected($current === '2')>Sala B</option>
+
+                                                {{-- 🔹 CHANGED: opzioni dinamiche basate su $legend --}}
+                                                @foreach ($legend ?? [] as $rid => $info)
+                                                    <option value="{{ $rid }}" @selected($current === (string) $rid)>
+                                                        {{ $info['name'] }}
+                                                    </option>
+                                                @endforeach
                                             </select>
                                         </td>
                                     @endforeach
@@ -67,10 +103,7 @@
                     </table>
                 </div>
 
-                <div class="mt-3">
-                    <span class="badge bg-primary">Sala A</span>
-                    <span class="ms-3 badge bg-secondary">Sala B</span>
-                </div>
+                {{-- ❌ RIMOSSA: legenda statica in fondo --}}
             </div>
 
             <div class="card-footer text-end">
@@ -105,6 +138,4 @@
             });
         });
     </script>
-
-
 @endsection

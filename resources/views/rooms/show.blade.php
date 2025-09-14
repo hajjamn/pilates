@@ -4,6 +4,9 @@
     <div class="container">
         <h1>Sala: {{ $room->name }}</h1>
 
+        <p><strong>Capienza massima:</strong> {{ $room->max_clients }}</p>
+
+
         <p><strong>Descrizione:</strong> {{ $room->description }}</p>
 
         <hr>

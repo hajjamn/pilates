@@ -14,13 +14,21 @@ return new class extends Migration {
             $table->dateTime('starts_at');
             $table->unsignedTinyInteger('max_clients')->default(7); // TODO: spostare su rooms/weekly_availabilities se serve
             $table->boolean('canceled')->default(false);
-            $table->boolean('manual_override')->default(false); // NEW
+            $table->boolean('manual_override')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
-            // Indici utili per query e conflitti
-            $table->index(['operator_id', 'starts_at'], 'idx_lessons_operator_starts_at');
+            // Flag calcolato per “attivo”: non cancellata e non soft-deleted
+            $table->boolean('is_active')
+                ->storedAs('CASE WHEN deleted_at IS NULL AND canceled = 0 THEN 1 ELSE 0 END');
+
+            // VINCOLI DI UNICITÀ: impediscono doppi slot per lezioni attive
+            $table->unique(['room_id', 'starts_at', 'is_active'], 'uniq_lessons_room_start_active');
+            $table->unique(['operator_id', 'starts_at', 'is_active'], 'uniq_lessons_operator_start_active');
+
+            // (Opzionali) indici di supporto: utili se fai spesso ricerche per giorno/sala/op.
             $table->index(['room_id', 'starts_at'], 'idx_lessons_room_starts_at');
+            $table->index(['operator_id', 'starts_at'], 'idx_lessons_operator_starts_at');
         });
     }
 

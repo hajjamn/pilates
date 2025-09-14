@@ -12,7 +12,8 @@ class Room extends Model
 
     protected $fillable = [
         'name',
-        'description'
+        'description',
+        'max_clients'
     ];
 
     public function weeklyAvailabilities()

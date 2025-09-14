@@ -7,8 +7,6 @@
         <h2 class="h4">Calendario Prenotazioni</h2>
         <div class="d-grid gap-2 my-3" style="max-width:520px;">
             <a class="btn btn-primary" href="{{ route('calendar.lessons.index') }}">Questa settimana ▸</a>
-            <a class="btn btn-outline-success disabled" href="#">Ricerca per sala ▸</a>
-            <a class="btn btn-outline-success disabled" href="#">Ricerca per istruttore ▸</a>
         </div>
 
         <h2 class="h4 mt-4">Lezioni Prenotate</h2>
@@ -36,8 +34,9 @@
 
                     {{-- CTA segnaposto --}}
                     <div class="mt-3 d-flex gap-2">
-                        <a href="#" class="btn btn-sm btn-outline-primary disabled">Dettagli lezione ▸</a>
-                        <a href="#" class="btn btn-sm btn-outline-secondary disabled">Calendario ▸</a>
+                        <a href="{{ route('client.lessons.show', $nextLesson) }}" class="btn btn-sm btn-outline-primary">
+                            Dettagli lezione ▸
+                        </a>
                     </div>
                 </div>
             </div>
@@ -48,8 +47,17 @@
         @endif
 
         <div class="d-grid gap-2 my-3" style="max-width:520px;">
-            <a class="btn btn-outline-secondary disabled" href="#">Prossime lezioni ▸</a>
-            <a class="btn btn-outline-secondary disabled" href="#">Storico lezioni ▸</a>
+            <a class="btn btn-outline-secondary" href="{{ route('client.lessons.index') }}">
+                Elenco lezioni ▸
+            </a>
+            <a class="btn btn-outline-secondary"
+                href="{{ route('client.lessons.index', ['time' => 'future', 'status' => 'booked']) }}">
+                Prossime lezioni ▸
+            </a>
+            <a class="btn btn-outline-secondary"
+                href="{{ route('client.lessons.index', ['time' => 'past', 'status' => 'all']) }}">
+                Storico lezioni ▸
+            </a>
         </div>
     </div>
 @endsection

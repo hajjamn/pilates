@@ -2,21 +2,18 @@
     <div class="container py-2 w-100">
         <div class="row align-items-center w-100">
             {{-- SX: Logo -> dashboard --}}
-            <div class="col-4 col-md-3">
+            <div class="col-4 col-md-3 d-flex align-items-center">
                 <a class="navbar-brand d-inline-flex align-items-center" href="{{ route('client.dashboard') }}">
                     <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="Logo" style="height: 40px;">
                 </a>
             </div>
 
-            {{-- CENTRO: Titolo pagina + lezioni rimaste --}}
+            {{-- CENTRO: Titolo + lezioni rimaste + link calendario --}}
             <div class="col-4 col-md-6 text-center">
                 <div class="lh-sm">
-                    <div class="fw-semibold">
-                        @yield('page-title', 'Homepage')
-                    </div>
+                    <div class="fw-semibold">@yield('page-title', 'Homepage')</div>
                     <div class="text-muted small">
-                        Lezioni rimaste:
-                        {{ auth()->user()->remaining_package_lessons ?? '—' }}
+                        Lezioni rimaste: {{ auth()->user()->remaining_package_lessons ?? '—' }}
                     </div>
                 </div>
             </div>
@@ -28,14 +25,12 @@
                         aria-expanded="false" aria-label="Apri menu utente">
                         <i class="fa-solid fa-bars fa-lg"></i>
                     </button>
-
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="dropdown-header">
                             {{ auth()->user()->full_name ?? auth()->user()->email }}
                         </li>
-                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}">
-                                <i class="fa-solid fa-user me-2"></i> Profilo
-                            </a></li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
+                                    class="fa-solid fa-user me-2"></i> Profilo</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>

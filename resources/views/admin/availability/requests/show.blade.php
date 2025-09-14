@@ -7,17 +7,53 @@
             <a href="{{ route('admin.availability.requests.index') }}" class="btn btn-outline-secondary">Torna alla lista</a>
         </div>
 
+        @php
+            $badgePalette = [
+                'bg-primary',
+                'bg-secondary',
+                'bg-success',
+                'bg-danger',
+                'bg-warning text-dark',
+                'bg-info text-dark',
+                'bg-dark',
+                'bg-light text-dark',
+            ];
+            $roomBadgeClass = [];
+            $i = 0;
+            foreach ($legend ?? [] as $rid => $info) {
+                $roomBadgeClass[$rid] = $badgePalette[$i % count($badgePalette)];
+                $i++;
+            }
+
+            $statusIt = [
+                'added' => 'Aggiunta',
+                'removed' => 'Rimossa',
+                'changed' => 'Modificata',
+                'unchanged' => 'Invariata',
+            ];
+        @endphp
+
+        {{-- @if (!empty($legend))
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                @foreach ($legend as $rid => $info)
+                    <span class="badge {{ $roomBadgeClass[$rid] ?? 'bg-secondary' }}"
+                        title="{{ $info['name'] }}">{{ $info['abbr'] }}</span>
+                    <span class="me-3">{{ $info['name'] }}</span>
+                @endforeach
+            </div>
+        @endif --}}
+
         <div class="card mb-3">
             <div class="card-body row g-3">
                 <div class="col-md-3">
                     <div class="text-muted small">Stato</div>
                     <div class="fw-semibold">
                         @if ($acr->status === 'pending')
-                            <span class="badge bg-warning text-dark">pending</span>
+                            <span class="badge bg-warning text-dark">Pending</span>
                         @elseif($acr->status === 'approved')
-                            <span class="badge bg-success">approved</span>
+                            <span class="badge bg-success">Approvata</span>
                         @else
-                            <span class="badge bg-danger">rejected</span>
+                            <span class="badge bg-danger">Respinta</span>
                         @endif
                     </div>
                 </div>
@@ -69,7 +105,8 @@
                                         <th>{{ $h }}</th>
                                         <td class="text-center">{{ $row['from'] }}</td>
                                         <td class="text-center">{{ $row['to'] }}</td>
-                                        <td class="text-center text-capitalize">{{ $row['status'] }}</td>
+                                        <td class="text-center text-capitalize">
+                                            {{ $statusIt[$row['status']] ?? ucfirst($row['status']) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

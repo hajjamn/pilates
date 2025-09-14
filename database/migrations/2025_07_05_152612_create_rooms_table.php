@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id('id');
             $table->string('name')->unique();
+            $table->unsignedInteger('max_clients');
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -11,15 +11,21 @@
 
         <div class="collapse navbar-collapse" id="navAdmin">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ route('operator.operators.index') }}">Gestione
-                        Operatori</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('admin.availability.index') }}">Gestione
-                        Disponibilità</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('calendar.lessons.index') }}">Calendario
+                        lezioni</a></li>
+                {{-- voce unica Disponibilità -> index admin (da lì link alle sotto-pagine) --}}
                 <li class="nav-item"><a class="nav-link"
-                        href="{{ route('admin.availability.requests.index') }}">Richieste Cambio Disponibilità</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('operator.availability.show') }}">Disponibilità
-                        Personale</a></li>
+                        href="{{ route('admin.availability.index') }}">Disponibilità</a></li>
 
+                {{-- altre aree amministrative utili --}}
+                <li class="nav-item"><a class="nav-link" href="{{ route('operator.operators.index') }}">Operatori</a>
+                </li>
+                @if (Route::has('admin.users.index'))
+                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.users.index') }}">Clienti</a></li>
+                @endif
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.rooms.index') }}">Sale</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.machines.index') }}">Macchine</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('admin.packages.index') }}">Pacchetti</a></li>
             </ul>
 
             <ul class="navbar-nav ms-auto">
@@ -28,8 +34,8 @@
                         {{ auth()->user()->full_name ?? auth()->user()->email }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>
-                                Profilo</a></li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
+                                    class="fas fa-user me-2"></i> Profilo</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>

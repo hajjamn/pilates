@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AvailabilityChangeRequest;
 use App\Models\WeeklyAvailability;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -27,6 +28,7 @@ class AvailabilityChangeRequestController extends Controller
     {
         $operator = $acr->operator;
         $daysLabels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
         $hours = [];
         for ($h = 9; $h <= 20; $h++) {
             $hours[] = sprintf('%02d:00', $h);
@@ -52,7 +54,7 @@ class AvailabilityChangeRequestController extends Controller
             $current[$d][$h] = (int) $s->room_id;
         }
 
-        // Stato PROPOSTO dal payload
+        // Stato PROPOSTO dal payload (DINAMICO su tutte le rooms esistenti)
         $proposed = [];
         foreach (range(0, 6) as $d) {
             $proposed[$d] = [];
@@ -61,21 +63,46 @@ class AvailabilityChangeRequestController extends Controller
             }
         }
 
+        // set room validi
+        $validRoomIds = Room::query()->pluck('id')->map(fn($v) => (int) $v)->all();
+        $validRoomSet = array_flip($validRoomIds);
+
         $daysPayload = $acr->payload['days'] ?? [];
         foreach ($daysPayload as $dayStr => $slots) {
             $d = (int) $dayStr;
             foreach ((array) $slots as $slot) {
                 $h = $slot['start'] ?? null;
-                $r = $slot['room_id'] ?? null;
-                if ($h && in_array($h, $hours, true) && in_array($r, [1, 2], true)) {
-                    $proposed[$d][$h] = (int) $r;
+                $r = isset($slot['room_id']) ? (int) $slot['room_id'] : null;
+                if ($h && in_array($h, $hours, true) && $r !== null && isset($validRoomSet[$r])) {
+                    $proposed[$d][$h] = $r;
                 }
             }
         }
 
+        // Legenda dinamica: union di stanze usate in current + proposed
+        $usedRoomIds = [];
+        foreach (range(0, 6) as $d) {
+            foreach ($hours as $h) {
+                if ($current[$d][$h])
+                    $usedRoomIds[$current[$d][$h]] = true;
+                if ($proposed[$d][$h])
+                    $usedRoomIds[$proposed[$d][$h]] = true;
+            }
+        }
+        $usedRoomIds = array_keys($usedRoomIds);
+
+        $rooms = Room::whereIn('id', $usedRoomIds)->orderBy('name')->get(['id', 'name']);
+        $alphabet = range('A', 'Z');
+        $legend = []; // [id => ['abbr'=>'A','name'=>'Sala Foo']]
+        foreach ($rooms as $i => $room) {
+            $legend[(int) $room->id] = [
+                'abbr' => $alphabet[$i] ?? ('S' . ($i + 1)),
+                'name' => $room->name,
+            ];
+        }
+
         // Diff
-        $legend = [1 => 'Sala A', 2 => 'Sala B'];
-        $diffByDay = []; // [day][hour] => ['status','from','to']
+        $diffByDay = []; // [day][hour] => ['status','from','to','from_id','to_id']
         $summary = ['added' => 0, 'removed' => 0, 'changed' => 0, 'unchanged' => 0];
 
         foreach (range(0, 6) as $d) {
@@ -98,8 +125,8 @@ class AvailabilityChangeRequestController extends Controller
 
                 $diffByDay[$d][$h] = [
                     'status' => $status,
-                    'from' => $cur ? ($legend[$cur] ?? ('Sala ' . $cur)) : '—',
-                    'to' => $prop ? ($legend[$prop] ?? ('Sala ' . $prop)) : '—',
+                    'from' => $cur ? ($legend[$cur]['name'] ?? ('Sala ' . $cur)) : '—',
+                    'to' => $prop ? ($legend[$prop]['name'] ?? ('Sala ' . $prop)) : '—',
                     'from_id' => $cur,
                     'to_id' => $prop,
                 ];
@@ -132,15 +159,19 @@ class AvailabilityChangeRequestController extends Controller
         $operatorId = (int) $acr->operator_id;
         $payloadDays = $acr->payload['days'] ?? [];
 
-        // desiderata: chiave "d|HH:MM" => room_id
+        // ✅ room_id validi dal DB
+        $validRoomIds = Room::query()->pluck('id')->map(fn($v) => (int) $v)->all();
+        $validRoomSet = array_flip($validRoomIds);
+
+        // desiderata: chiave "d|HH:MM" => room_id (solo se valido)
         $desired = [];
         foreach ($payloadDays as $dayStr => $slots) {
             $d = (int) $dayStr;
             foreach ((array) $slots as $slot) {
                 $h = $slot['start'] ?? null;
-                $r = $slot['room_id'] ?? null;
-                if ($h && preg_match('/^\d{2}:\d{2}$/', $h) && in_array($r, [1, 2], true)) {
-                    $desired[$d . '|' . $h] = (int) $r;
+                $r = isset($slot['room_id']) ? (int) $slot['room_id'] : null;
+                if ($h && preg_match('/^\d{2}:\d{2}$/', $h) && $r !== null && isset($validRoomSet[$r])) {
+                    $desired[$d . '|' . $h] = $r;
                 }
             }
         }

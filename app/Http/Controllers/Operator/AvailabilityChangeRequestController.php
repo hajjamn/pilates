@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operator;
 use App\Http\Controllers\Controller;
 use App\Models\AvailabilityChangeRequest;
 use App\Models\WeeklyAvailability;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -33,13 +34,13 @@ class AvailabilityChangeRequestController extends Controller
         }
 
         $daysLabels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
         $hours = [];
         for ($h = 9; $h <= 20; $h++) {
             $hours[] = sprintf('%02d:00', $h);
         }
 
-        $current = [];
-        $proposed = [];
+        $current = $proposed = [];
         foreach (range(0, 6) as $d) {
             $current[$d] = $proposed[$d] = [];
             foreach ($hours as $hstr) {
@@ -57,19 +58,44 @@ class AvailabilityChangeRequestController extends Controller
             $current[$d][$h] = (int) $s->room_id;
         }
 
+        // NEW: valid room ids + proposta dinamica
+        $validRoomIds = Room::query()->pluck('id')->map(fn($v) => (int) $v)->all();
+        $validRoomSet = array_flip($validRoomIds);
+
         $daysPayload = $acr->payload['days'] ?? [];
         foreach ($daysPayload as $dayStr => $slots) {
             $d = (int) $dayStr;
             foreach ((array) $slots as $s) {
                 $h = $s['start'] ?? null;
-                $r = $s['room_id'] ?? null;
-                if ($h && in_array($h, $hours, true) && in_array($r, [1, 2], true)) {
-                    $proposed[$d][$h] = (int) $r;
+                $r = isset($s['room_id']) ? (int) $s['room_id'] : null;
+                if ($h && in_array($h, $hours, true) && $r !== null && isset($validRoomSet[$r])) {
+                    $proposed[$d][$h] = $r;
                 }
             }
         }
 
-        $legend = [1 => 'Sala A', 2 => 'Sala B'];
+        // NEW: legenda dinamica (union current+proposed)
+        $usedRoomIds = [];
+        foreach (range(0, 6) as $d) {
+            foreach ($hours as $h) {
+                if ($current[$d][$h])
+                    $usedRoomIds[$current[$d][$h]] = true;
+                if ($proposed[$d][$h])
+                    $usedRoomIds[$proposed[$d][$h]] = true;
+            }
+        }
+        $usedRoomIds = array_keys($usedRoomIds);
+
+        $rooms = Room::whereIn('id', $usedRoomIds)->orderBy('name')->get(['id', 'name']);
+        $alphabet = range('A', 'Z');
+        $legend = []; // [id => ['abbr'=>'A','name'=>'Sala ...']]
+        foreach ($rooms as $i => $room) {
+            $legend[(int) $room->id] = [
+                'abbr' => $alphabet[$i] ?? ('S' . ($i + 1)),
+                'name' => $room->name,
+            ];
+        }
+
         $diff = [];
         $summary = ['added' => 0, 'removed' => 0, 'changed' => 0, 'unchanged' => 0];
 
@@ -78,6 +104,7 @@ class AvailabilityChangeRequestController extends Controller
             foreach ($hours as $h) {
                 $cur = $current[$d][$h];
                 $prop = $proposed[$d][$h];
+
                 if ($cur === null && $prop === null)
                     $st = 'unchanged';
                 elseif ($cur === null && $prop !== null)
@@ -86,11 +113,13 @@ class AvailabilityChangeRequestController extends Controller
                     $st = 'removed';
                 else
                     $st = ($cur === $prop) ? 'unchanged' : 'changed';
+
                 $summary[$st]++;
+
                 $diff[$d][$h] = [
                     'status' => $st,
-                    'from' => $cur ? ($legend[$cur] ?? ('Sala ' . $cur)) : '—',
-                    'to' => $prop ? ($legend[$prop] ?? ('Sala ' . $prop)) : '—',
+                    'from' => $cur ? ($legend[$cur]['name'] ?? ('Sala ' . $cur)) : '—',
+                    'to' => $prop ? ($legend[$prop]['name'] ?? ('Sala ' . $prop)) : '—',
                 ];
             }
         }
@@ -101,6 +130,7 @@ class AvailabilityChangeRequestController extends Controller
             'hours' => $hours,
             'diff' => $diff,
             'summary' => $summary,
+            'legend' => $legend,
         ]);
     }
 
@@ -138,12 +168,25 @@ class AvailabilityChangeRequestController extends Controller
             ->get(['day_of_week', 'start_time', 'room_id']);
 
         foreach ($slots as $slot) {
-            $dayKey = (int) $slot->day_of_week;                 // 0..6
-            $hour = substr($slot->start_time, 0, 5);          // 'HH:MM'
-            if (!isset($hoursSet[$hour])) {
+            $dayKey = (int) $slot->day_of_week;
+            $hour = substr($slot->start_time, 0, 5); // 'HH:MM'
+            if (!isset($hoursSet[$hour]))
                 continue;
-            }         // fuori fascia? salta
-            $matrix[$dayKey][$hour] = (int) $slot->room_id;     // 1 o 2
+            $matrix[$dayKey][$hour] = (int) $slot->room_id;
+        }
+
+        $rooms = Room::query()
+            // ->where('active', true) // ← se hai una colonna 'active', scommenta
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $alphabet = range('A', 'Z');
+        $legend = []; // [ room_id => ['abbr'=>'A','name'=>'Sala X'] ]
+        foreach ($rooms as $i => $room) {
+            $legend[(int) $room->id] = [
+                'abbr' => $alphabet[$i] ?? ('S' . ($i + 1)), // ⬅️ fallback con "S"
+                'name' => $room->name,
+            ];
         }
 
         $effectiveFrom = Carbon::today()->next(Carbon::MONDAY)->toDateString();
@@ -154,6 +197,7 @@ class AvailabilityChangeRequestController extends Controller
             'hours' => $hours,
             'matrix' => $matrix,
             'effective_from' => $effectiveFrom,
+            'legend' => $legend,
         ]);
     }
 
@@ -166,19 +210,28 @@ class AvailabilityChangeRequestController extends Controller
             'slots' => ['nullable', 'array'],
         ]);
 
+        // NEW: set di room_id validi
+        $validRoomIds = Room::query()->pluck('id')->map(fn($v) => (int) $v)->all();
+        $validRoomSet = array_flip($validRoomIds);
+
+        $hoursWhitelist = array_map(fn($h) => sprintf('%02d:00', $h), range(9, 20));
+
         $daysPayload = [];
         foreach ((array) ($data['slots'] ?? []) as $dayStr => $hoursMap) {
             $day = (int) $dayStr;
             if ($day < 0 || $day > 6 || !is_array($hoursMap))
                 continue;
+
             foreach ($hoursMap as $hour => $roomId) {
-                if (!in_array($hour, array_map(fn($h) => sprintf('%02d:00', $h), range(9, 20)), true))
+                if (!in_array($hour, $hoursWhitelist, true))
                     continue;
                 if ($roomId === '' || $roomId === null)
                     continue;
+
                 $room = (int) $roomId;
-                if (!in_array($room, [1, 2], true))
-                    continue;
+                if (!isset($validRoomSet[$room]))
+                    continue; // scarta id sala non valido
+
                 $daysPayload[(string) $day][] = ['start' => $hour, 'room_id' => $room];
             }
         }
@@ -206,19 +259,24 @@ class AvailabilityChangeRequestController extends Controller
             ->with('status', 'Richiesta inviata: in attesa di approvazione.');
     }
 
+
     private function applyAvailabilityChange(AvailabilityChangeRequest $acr): void
     {
         $operatorId = (int) $acr->operator_id;
         $daysPayload = $acr->payload['days'] ?? [];
+
+        // NEW: set di room_id validi
+        $validRoomIds = Room::query()->pluck('id')->map(fn($v) => (int) $v)->all();
+        $validRoomSet = array_flip($validRoomIds);
 
         $desired = [];
         foreach ($daysPayload as $dayStr => $slots) {
             $d = (int) $dayStr;
             foreach ((array) $slots as $slot) {
                 $h = $slot['start'] ?? null;
-                $r = $slot['room_id'] ?? null;
-                if ($h && preg_match('/^\d{2}:\d{2}$/', $h) && in_array($r, [1, 2], true)) {
-                    $desired[$d . '|' . $h] = (int) $r;
+                $r = isset($slot['room_id']) ? (int) $slot['room_id'] : null;
+                if ($h && preg_match('/^\d{2}:\d{2}$/', $h) && $r !== null && isset($validRoomSet[$r])) {
+                    $desired[$d . '|' . $h] = $r;
                 }
             }
         }
@@ -251,9 +309,8 @@ class AvailabilityChangeRequestController extends Controller
                     $row->end_time = $endTime;
                     $needsUpdate = true;
                 }
-                if ($needsUpdate) {
+                if ($needsUpdate)
                     $row->save();
-                }
             } else {
                 WeeklyAvailability::create([
                     'operator_id' => $operatorId,

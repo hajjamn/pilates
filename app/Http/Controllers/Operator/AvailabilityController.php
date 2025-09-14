@@ -7,6 +7,7 @@ use App\Models\WeeklyAvailability;
 use Illuminate\Http\Request;
 use App\Models\AvailabilityChangeRequest;
 use Carbon\Carbon;
+use App\Models\Room;
 
 class AvailabilityController extends Controller
 {
@@ -43,7 +44,6 @@ class AvailabilityController extends Controller
             ->where('operator_id', $user->id)
             ->get(['day_of_week', 'start_time', 'room_id']);
 
-
         foreach ($slots as $slot) {
             $dayKey = (int) $slot->day_of_week;
             $hour = Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
@@ -52,7 +52,19 @@ class AvailabilityController extends Controller
             }
         }
 
-        $legend = [1 => 'Sala A', 2 => 'Sala B'];
+        // 🔹 NEW: legenda dinamica per le stanze effettivamente usate
+        $roomIds = $slots->pluck('room_id')->filter()->unique()->values();
+        $rooms = Room::whereIn('id', $roomIds)->orderBy('name')->get(['id', 'name']);
+
+        $alphabet = range('A', 'Z');
+        $legend = []; // es: [ room_id => ['abbr' => 'A', 'name' => 'Sala Grande'] ]
+        foreach ($rooms as $i => $room) {
+            $legend[(int) $room->id] = [
+                'abbr' => $alphabet[$i] ?? ('S' . ($i + 1)), // fallback oltre Z
+                'name' => $room->name,
+            ];
+        }
+
         $hasAny = $slots->isNotEmpty();
 
         return view('operator.availability.show', [
@@ -64,5 +76,4 @@ class AvailabilityController extends Controller
             'hasAny' => $hasAny,
         ]);
     }
-
 }

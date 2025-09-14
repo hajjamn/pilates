@@ -31,6 +31,7 @@ class RoomController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|unique:rooms,name',
             'description' => 'nullable|string',
+            'max_clients' => ['required', 'integer', 'min:1', 'max:100']
         ]);
 
         Room::create($validated);
@@ -51,6 +52,7 @@ class RoomController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|unique:rooms,name,' . $room->id,
             'description' => 'nullable|string',
+            'max_clients' => ['required', 'integer', 'min:1', 'max:100']
         ]);
 
         $room->update($validated);

@@ -14,10 +14,14 @@
     $authId = auth()->id();
 
     // Prenotazione ATTIVA dell'utente (deleted_at NULL)
+// Prenotazione ATTIVA
 $activeBooking = \App\Models\LessonUser::where('lesson_id', $lesson->id)
     ->where('user_id', $authId)
     ->whereNull('deleted_at')
     ->first();
+
+// Qualsiasi prenotazione (attiva o cancellata)
+$hasAnyBooking = \App\Models\LessonUser::where('lesson_id', $lesson->id)->where('user_id', $authId)->exists();
 
 // Conteggio iscritti attivi (per capienza)
 $activeCount = \App\Models\LessonUser::where('lesson_id', $lesson->id)->whereNull('deleted_at')->count();
@@ -65,7 +69,7 @@ $isPast = $lesson->starts_at->isPast();
                 <div class="text-muted">
                     {{ $startTime }}–{{ $endTime }}
                     @if ($lesson->room)
-                        • Sala {{ $lesson->room->name }}
+                        • {{ $lesson->room->name }}
                     @endif
                 </div>
                 @if ($lesson->operator)
@@ -92,9 +96,9 @@ $isPast = $lesson->starts_at->isPast();
             </div>
         </div>
 
-        <div class="mt-2">
+        <div class="mt-2 d-flex flex-column gap-2">
+            {{-- Pulsante principale (prenota / annulla / stato) --}}
             @if ($activeBooking)
-                {{-- Bottone: disdetta (abilitato solo se $canCancel) --}}
                 @if ($canCancel)
                     <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
                         data-bs-target="#cancelModal-{{ $lesson->id }}">
@@ -107,7 +111,6 @@ $isPast = $lesson->starts_at->isPast();
                     </button>
                 @endif
             @else
-                {{-- Prenotazione (consentita solo se non piena, non cancellata, non passata) --}}
                 @if ($isCanceled)
                     <button class="btn btn-secondary w-100" disabled>Lezione cancellata</button>
                 @elseif ($isPast)
@@ -120,6 +123,13 @@ $isPast = $lesson->starts_at->isPast();
                         Prenotati
                     </button>
                 @endif
+            @endif
+
+            {{-- Nuovo: Dettaglio lezione --}}
+            @if ($hasAnyBooking)
+                <a href="{{ route('client.lessons.show', $lesson) }}" class="btn btn-outline-secondary w-100">
+                    Dettagli
+                </a>
             @endif
         </div>
     </div>

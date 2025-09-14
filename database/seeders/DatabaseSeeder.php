@@ -9,7 +9,15 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
+
+        if (app()->environment('production')) {
+            $this->call(ProductionSeeder::class);
+            return;
+        }
+
+        $this->call(DevelopementSeeder::class);
+
+        /* $this->call([
             RoleSeeder::class,
             PermissionSeeder::class,
             UserSeeder::class,
@@ -22,6 +30,6 @@ class DatabaseSeeder extends Seeder
             LessonUserSeeder::class,
             DigitalLessonSeeder::class,
             DigitalLessonUserSeeder::class,
-        ]);
+        ]); */
     }
 }
