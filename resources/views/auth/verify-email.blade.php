@@ -8,9 +8,9 @@
                     <div class="card-header">{{ __('Verify Your Email Address') }}</div>
 
                     <div class="card-body">
-                        @if (session('resent'))
+                        @if (session('status') === 'verification-link-sent')
                             <div class="alert alert-success" role="alert">
-                                {{ __('A fresh verification link has been sent to your email address.') }}
+                                {{ __('Ti abbiamo inviato un nuovo link di verifica all’indirizzo email fornito.') }}
                             </div>
                         @endif
 

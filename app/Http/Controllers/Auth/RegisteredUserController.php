@@ -46,12 +46,12 @@ class RegisteredUserController extends Controller
             'phone' => $request->phone
         ]);
 
-        $user->assignRole('client');
+        $user->assignRole('cliente');
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME);
+        return redirect()->route('verification.notice');
     }
 }

@@ -25,81 +25,6 @@
 <body>
     <div id="app">
 
-        {{-- <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-            <div class="container">
-                <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
-                    <div class="logo_nav">
-                        <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="App Logo" style="height: 40px;">
-                    </div>
-                </a>
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/') }}">{{ __('Home') }}</a>
-                        </li>
-                        @role('admin')
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('operator.operators.index') }}">
-                                    Gestione Operatori
-                                </a>
-                            </li>
-                        @endrole
-                        @role('operatore')
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('operator.operators.show', auth()->id()) }}">
-                                    Panoramica Operatore
-                                </a>
-                            </li>
-                        @endrole
-                    </ul>
-
-
-                    <ul class="navbar-nav ml-auto">
-                        @guest
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-                            </li>
-                            @if (Route::has('register'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
-                                </li>
-                            @endif
-                        @else
-                            <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }}
-                                </a>
-
-                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item"
-                                        href="{{ route('admin.dashboard') }}">{{ __('Dashboard') }}</a>
-                                    <a class="dropdown-item" href="{{ url('profile') }}">{{ __('Profile') }}</a>
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                        onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
-                                        {{ __('Logout') }}
-                                    </a>
-
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                                        @csrf
-                                    </form>
-                                </div>
-                            </li>
-                        @endguest
-                    </ul>
-                </div>
-            </div>
-        </nav> --}}
-
         <header>
             @auth
                 @php $u = auth()->user(); @endphp
@@ -130,6 +55,44 @@
 
         <main>
             <div class="container">
+
+                {{-- Reminder: verifica email --}}
+                @auth
+                    @if (!auth()->user()->hasVerifiedEmail())
+                        <div class="alert alert-warning d-flex justify-content-between align-items-center my-3"
+                            role="alert">
+                            <div>
+                                <strong>Verifica l’email:</strong> per usare tutte le funzionalità devi confermare il tuo
+                                indirizzo.
+                                Controlla la posta oppure richiedi un nuovo link.
+                            </div>
+                            <form class="ms-3" method="POST" action="{{ route('verification.send') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-dark">
+                                    Invia di nuovo
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                @endauth
+
+                {{-- Reminder: aggiungi telefono --}}
+                @auth
+                    @php $u = auth()->user(); @endphp
+                    @if (blank($u->phone))
+                        <div class="alert alert-info d-flex justify-content-between align-items-center my-3" role="alert">
+                            <div>
+                                <strong>Completa il profilo:</strong> aggiungi il tuo numero di telefono per essere
+                                ricontattato rapidamente.
+                            </div>
+                            <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-primary">
+                                Aggiungi telefono
+                            </a>
+                        </div>
+                    @endif
+                @endauth
+
+
                 @include('partials.flash')
                 @yield('content')
             </div>

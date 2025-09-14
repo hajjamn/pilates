@@ -11,6 +11,7 @@ use App\Http\Controllers\Operator\AvailabilityController as OperatorAvailability
 use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
 use App\Http\Controllers\Operator\AvailabilityChangeRequestController as OperatorAvailabilityChangeRequestController;
 use App\Http\Controllers\Admin\AvailabilityChangeRequestController as AdminAvailabilityChangeRequestController;
+use App\Http\Controllers\Operator\ClientController;
 use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
@@ -243,6 +244,12 @@ Route::prefix('ada-turco-pilates')->group(function () {
 
             Route::get('/disponibilita-settimanale/richieste/{acr}', [OperatorAvailabilityChangeRequestController::class, 'show'])
                 ->name('availability.requests.show');
+
+            Route::get('/clienti/create', [ClientController::class, 'create'])
+                ->name('clients.create');
+
+            Route::post('/clienti', [ClientController::class, 'store'])
+                ->name('clients.store');
         });
 
     //------------------------------

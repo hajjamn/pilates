@@ -19,6 +19,9 @@
                 {{-- opzionali utili per l’operatore --}}
                 <li class="nav-item"><a class="nav-link"
                         href="{{ route('operator.operators.show', auth()->id()) }}">Riepilogo</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('operator.clients.create') }}">Crea cliente</a>
+                </li>
             </ul>
 
             <ul class="navbar-nav ms-auto">

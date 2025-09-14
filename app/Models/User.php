@@ -128,5 +128,14 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->attributes['phone'] = $e164 ?: null;
     }
 
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
 
 }
