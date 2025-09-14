@@ -15,10 +15,6 @@
                     <div class="text-muted small">
                         Lezioni rimaste: {{ auth()->user()->remaining_package_lessons ?? '—' }}
                     </div>
-                    <div class="mt-1">
-                        <a href="{{ route('calendar.lessons.index') }}"
-                            class="small text-decoration-underline">Calendario lezioni</a>
-                    </div>
                 </div>
             </div>
 

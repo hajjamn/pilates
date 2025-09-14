@@ -68,16 +68,15 @@ class OperatorController extends Controller
      */
     public function show(User $operator)
     {
-
         $this->isSelfOrAdmin($operator);
 
-        $futureLessonsQuery = $operator->operatedLessons()->future();
-        $activeFutureLessons = $futureLessonsQuery->active()->get();
-        $canceledFutureLessons = $futureLessonsQuery->canceled()->get();
+        $futureLessonsQuery = $operator->operatedLessons()->with('room')->future()->orderBy('starts_at', 'desc');
+        $activeFutureLessons = $futureLessonsQuery->clone()->active()->get();
+        $canceledFutureLessons = $futureLessonsQuery->clone()->canceled()->get();
 
-        $pastLessonsQuery = $operator->operatedLessons()->past();
-        $activePastLessons = $pastLessonsQuery->active()->get();
-        $canceledPastLessons = $pastLessonsQuery->canceled()->get();
+        $pastLessonsQuery = $operator->operatedLessons()->with('room')->past()->orderBy('starts_at', 'desc');
+        $activePastLessons = $pastLessonsQuery->clone()->active()->get();
+        $canceledPastLessons = $pastLessonsQuery->clone()->canceled()->get();
 
         $lessons = [
             'future' => [
@@ -92,6 +91,7 @@ class OperatorController extends Controller
 
         return view('operator.operators.show', compact(['operator', 'lessons']));
     }
+
 
     /**
      * Show the form for editing the specified resource.
