@@ -56,43 +56,9 @@
         <main>
             <div class="container">
 
-                {{-- Reminder: verifica email --}}
                 @auth
-                    @if (!auth()->user()->hasVerifiedEmail())
-                        <div class="alert alert-warning d-flex justify-content-between align-items-center my-3"
-                            role="alert">
-                            <div>
-                                <strong>Verifica l’email:</strong> per usare tutte le funzionalità devi confermare il tuo
-                                indirizzo.
-                                Controlla la posta oppure richiedi un nuovo link.
-                            </div>
-                            <form class="ms-3" method="POST" action="{{ route('verification.send') }}">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-outline-dark">
-                                    Invia di nuovo
-                                </button>
-                            </form>
-                        </div>
-                    @endif
+                    @include('partials.account-alerts')
                 @endauth
-
-                {{-- Reminder: aggiungi telefono --}}
-                @auth
-                    @php $u = auth()->user(); @endphp
-                    @if (blank($u->phone))
-                        <div class="alert alert-info d-flex justify-content-between align-items-center my-3" role="alert">
-                            <div>
-                                <strong>Completa il profilo:</strong> aggiungi il tuo numero di telefono per essere
-                                ricontattato rapidamente.
-                            </div>
-                            <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-primary">
-                                Aggiungi telefono
-                            </a>
-                        </div>
-                    @endif
-                @endauth
-
-
                 @include('partials.flash')
                 @yield('content')
             </div>

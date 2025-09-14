@@ -1,4 +1,13 @@
 <div class="mt-2 mb-3">
+    {{-- Status specifici (es. re-invio verifica email) --}}
+    @if (session('status') === 'verification-link-sent')
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            Ti abbiamo inviato un nuovo link di verifica
+            {{ auth()->check() ? 'all\'indirizzo ' . auth()->user()->email : '' }}.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+        </div>
+    @endif
+
 
     {{-- Success (es. with('status', '...')) --}}
     @if (session('status'))
