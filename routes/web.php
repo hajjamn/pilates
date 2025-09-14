@@ -258,6 +258,9 @@ Route::prefix('ada-turco-pilates')->group(function () {
             Route::get('/lezioni/{lesson}', [ClientLessonController::class, 'show'])
                 ->whereNumber('lesson')
                 ->name('lessons.show');
+
+            Route::get('/lezioni', [ClientLessonController::class, 'index'])
+                ->name('lessons.index');
         });
 
     require __DIR__ . '/auth.php';

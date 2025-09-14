@@ -47,8 +47,17 @@
         @endif
 
         <div class="d-grid gap-2 my-3" style="max-width:520px;">
-            <a class="btn btn-outline-secondary disabled" href="#">Prossime lezioni ▸</a>
-            <a class="btn btn-outline-secondary disabled" href="#">Storico lezioni ▸</a>
+            <a class="btn btn-outline-secondary" href="{{ route('client.lessons.index') }}">
+                Elenco lezioni ▸
+            </a>
+            <a class="btn btn-outline-secondary"
+                href="{{ route('client.lessons.index', ['time' => 'future', 'status' => 'booked']) }}">
+                Prossime lezioni ▸
+            </a>
+            <a class="btn btn-outline-secondary"
+                href="{{ route('client.lessons.index', ['time' => 'past', 'status' => 'all']) }}">
+                Storico lezioni ▸
+            </a>
         </div>
     </div>
 @endsection

@@ -6,9 +6,88 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Lesson;
 use App\Models\LessonUser;
+use App\Models\Room;
+use App\Models\User;
 
 class ClientLessonController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        // ==== Filtri ====
+        $validated = $request->validate([
+            'time' => 'nullable|in:future,past,all',
+            'status' => 'nullable|in:booked,canceled,all',
+            'room_id' => 'nullable|integer',
+            'operator_id' => 'nullable|integer',
+        ]);
+
+        $time = $validated['time'] ?? 'future';   // default: future
+        $status = $validated['status'] ?? 'booked';   // default: prenotazioni attive
+        $roomId = $validated['room_id'] ?? null;
+        $operatorId = $validated['operator_id'] ?? null;
+
+        // ==== Query su Lesson con join sulla pivot dell'utente ====
+        $q = Lesson::query()
+            ->join('lesson_users as lu', 'lu.lesson_id', '=', 'lessons.id')
+            ->where('lu.user_id', $user->id);
+
+        // Stato prenotazione (attiva / cancellata / tutte)
+        if ($status === 'booked') {
+            $q->whereNull('lu.deleted_at');
+        } elseif ($status === 'canceled') {
+            $q->whereNotNull('lu.deleted_at');
+        } // 'all' -> nessun filtro
+
+        // Filtro temporale
+        if ($time === 'future') {
+            $q->where('lessons.starts_at', '>', now());
+        } elseif ($time === 'past') {
+            $q->where('lessons.starts_at', '<=', now());
+        }
+
+        // Filtro sala / operatore
+        if (!empty($roomId)) {
+            $q->where('lessons.room_id', (int) $roomId);
+        }
+        if (!empty($operatorId)) {
+            $q->where('lessons.operator_id', (int) $operatorId);
+        }
+
+        // Evita eventuali duplicati (in caso di più righe storiche in pivot)
+        $q->distinct('lessons.id');
+
+        // Seleziona solo colonne della lezione (Eloquent modellerà Lesson correttamente)
+        $q->select('lessons.*');
+
+        // Ordinamento e eager load
+        $q->orderBy('lessons.starts_at', 'desc')
+            ->with(['operator', 'room']);
+
+        // Paginazione compatibile e mantenimento query string
+        $lessons = $q->paginate(12);
+        $lessons->appends($request->query());
+
+        // Liste per i filtri
+        $rooms = Room::orderBy('name')->get(['id', 'name']);
+        $operators = User::operators()
+            ->orderBy('last_name')->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        return view('client.lessons.index', [
+            'lessons' => $lessons,  // paginator di Lesson (niente mapping)
+            'time' => $time,
+            'status' => $status,
+            'roomId' => $roomId,
+            'operatorId' => $operatorId,
+            'rooms' => $rooms,
+            'operators' => $operators,
+        ]);
+    }
+
+
     public function show(Request $request, Lesson $lesson)
     {
         $user = $request->user();

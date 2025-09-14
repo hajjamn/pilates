@@ -3,7 +3,9 @@
 
 @section('content')
     <div class="container mb-4" style="max-width: 760px;">
-        <a href="{{ route('client.dashboard') }}" class="btn btn-primary mb-3">← Torna alla dashboard</a>
+        <a href="{{ url()->previous() }}" class="btn btn-secondary mb-3">
+            ← Indietro
+        </a>
 
         <div class="card shadow-sm">
 
