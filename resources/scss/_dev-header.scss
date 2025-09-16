@@ -1,0 +1,111 @@
+// ===============================
+// Header curvo (mobile-first)
+// dipendenze: _brand-buttons.scss (per i colori)
+// ===============================
+
+// ---- token (puoi regolarli a piacere)
+$dev-hero-bg: $brand-green-700 !default; // colore di fondo dell'header
+$dev-hero-text: #fff !default; // testo/hamburger
+$dev-hero-wave-h: 45px !default; // altezza onda mobile
+$dev-hero-wave-h-md: 160px !default; // altezza onda >= md
+$dev-hero-shadow: 0 6px 16px rgba(0, 0, 0, .10) !default;
+
+// (opzionale) colore sfondo pagina se vuoi replicare l’off-white dello screenshot
+$body-offwhite: $brand-offwhite !default;
+
+// ---- base page (se vuoi davvero l'off-white sotto, scommenta)
+// body { background-color: $body-offwhite; }
+
+// ===============================
+// HEADER
+// ===============================
+.dev-hero {
+    position: relative;
+    color: $dev-hero-text;
+    background-color: $dev-hero-bg;
+    overflow: hidden;
+    z-index: 1;
+
+    // leggero padding per respiro su mobile
+    .container {
+        padding-top: .75rem;
+        padding-bottom: .75rem;
+    }
+
+    // testi del blocco centrale
+    .h5,
+    .fw-semibold,
+    .small {
+        color: $dev-hero-text;
+    }
+
+    // link/hamburger nel header
+    .btn.btn-link {
+        color: $dev-hero-text;
+        text-decoration: none;
+
+        &:hover {
+            opacity: .9;
+        }
+
+        &:focus-visible {
+            outline: 0;
+            box-shadow: 0 0 0 .25rem rgba(255, 255, 255, .35);
+        }
+    }
+
+    // brand (logo)
+    .navbar-brand img {
+        height: 48px; // coerente con il partial
+        width: auto;
+    }
+
+    // dropdown contrasto
+    .dropdown-menu {
+        // stacca dal bg scuro e proietta un’ombra leggera
+        margin-top: .5rem;
+        box-shadow: $dev-hero-shadow;
+    }
+
+    // Onda inferiore
+    .dev-hero-wave {
+        display: block;
+        width: 100%;
+        height: $dev-hero-wave-h; // mobile
+        pointer-events: none;
+        z-index: 0;
+
+        // l’onda è “disegnata” con lo stesso colore del bg header
+        .wave-path {
+            fill: $body-offwhite;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .container {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .dev-hero-wave {
+            height: $dev-hero-wave-h-md;
+        }
+    }
+}
+
+// opzionale: una lieve ombra sotto l’onda per separare dal contenuto
+.dev-hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(#{$dev-hero-wave-h} * -0.15);
+    height: 24px;
+    filter: blur(12px);
+    background: rgba(0, 0, 0, .06);
+    pointer-events: none;
+
+    @media (min-width: 768px) {
+        bottom: calc(#{$dev-hero-wave-h-md} * -0.15);
+    }
+}

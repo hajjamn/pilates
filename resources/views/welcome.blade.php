@@ -46,7 +46,7 @@
 
     <div class="container py-5">
         <div class="hero p-4 p-md-5 text-center">
-            <img src="{{ Vite::asset('resources/img/logo.jpeg') }}" alt="Centro Pilates – Ada Turco" class="logo mb-3">
+            <img src="{{ Vite::asset('resources/img/logo.png') }}" alt="Centro Pilates – Ada Turco" class="logo mb-3">
             <h1 class="h3 mb-2">Centro Pilates – Ada Turco</h1>
             <p class="text-muted mb-4">
                 Prenota le lezioni, gestisci i tuoi crediti e segui i progressi, tutto dal tuo smartphone.

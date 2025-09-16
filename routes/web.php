@@ -272,3 +272,11 @@ Route::group([], function () {
 
     require __DIR__ . '/auth.php';
 });
+
+Route::middleware('web')->group(function () {
+    Route::get('/dev/css-test', function () {
+        return view('dev.css-test', [
+            'navPartial' => 'partials.nav.dev',
+        ]);
+    })->name('dev.css-test');
+});

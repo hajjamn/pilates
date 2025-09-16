@@ -1,0 +1,128 @@
+// ===============================
+// Brand Buttons (mobile-first)
+// ===============================
+
+// ---- Palette Brand (dal file inviato)
+$brand-green-700: #798C7B; // primario
+$brand-green-600: #859A87;
+$brand-green-400: #A4B4A5;
+$brand-green-200: #C2CDC3;
+$brand-offwhite: #F4F4F2;
+
+// ---- Accents proposti
+$accent-slate-600: #4F6D7A;
+$accent-slate-700: #3F5862;
+$accent-slate-800: #2F444B;
+
+$accent-indigo-600: #4B5D9A;
+$accent-indigo-700: #3C4B7A;
+$accent-indigo-800: #2B385A;
+
+$accent-saffron-500: #D4A62A; // usare testo scuro
+$accent-saffron-600: #B98F23;
+$accent-saffron-700: #99781D;
+
+// ---- Text colors
+$text-on-dark: #fff;
+$text-on-warm: #1A1A1A;
+
+// ---- Focus rings
+$focus-brand: rgba(121, 140, 123, .35);
+$focus-slate: rgba(79, 109, 122, .35);
+$focus-indigo: rgba(75, 93, 154, .35);
+$focus-saffron: rgba(212, 166, 42, .35);
+
+// ---- Transition
+$btn-transition: color .15s ease-in-out,
+  background-color .15s ease-in-out,
+  border-color .15s ease-in-out,
+  box-shadow .15s ease-in-out;
+
+
+// ===============================
+// Mixin per generare bottoni
+// ===============================
+
+@mixin my-btn($name, $bg, $hover, $active, $text, $focus) {
+  .my-btn-#{$name} {
+    @extend .btn;
+    color: $text;
+    background-color: $bg;
+    border-color: $bg;
+    font-weight: 600;
+    border-radius: .5rem;
+    transition: $btn-transition;
+
+    &:hover {
+      color: $text;
+      background-color: $hover;
+      border-color: $hover;
+    }
+
+    &:active,
+    &.active {
+      color: $text;
+      background-color: $active;
+      border-color: $active;
+    }
+
+    &:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 .25rem $focus;
+    }
+
+    &:disabled,
+    &.disabled {
+      opacity: .65;
+      pointer-events: none;
+    }
+  }
+
+  // Outline
+  .my-btn-#{$name}-outline {
+    @extend .btn;
+    color: $bg;
+    background-color: transparent;
+    border-color: $bg;
+    font-weight: 600;
+    border-radius: .5rem;
+    transition: $btn-transition;
+
+    &:hover {
+      color: $text;
+      background-color: $bg;
+      border-color: $bg;
+    }
+
+    &:active,
+    &.active {
+      color: $text;
+      background-color: $hover;
+      border-color: $hover;
+    }
+
+    &:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 .25rem $focus;
+    }
+
+    &:disabled,
+    &.disabled {
+      opacity: .65;
+      pointer-events: none;
+    }
+  }
+}
+
+
+// ===============================
+// Bottoni pronti
+// ===============================
+
+// Brand verde
+@include my-btn("brand-primary", $brand-green-700, $brand-green-600, $brand-green-400, $text-on-dark, $focus-brand);
+
+// Accents
+@include my-btn("accent-slate", $accent-slate-600, $accent-slate-700, $accent-slate-800, $text-on-dark, $focus-slate);
+@include my-btn("accent-indigo", $accent-indigo-600, $accent-indigo-700, $accent-indigo-800, $text-on-dark, $focus-indigo);
+@include my-btn("accent-saffron", $accent-saffron-500, $accent-saffron-600, $accent-saffron-700, $text-on-warm, $focus-saffron);

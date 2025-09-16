@@ -26,21 +26,26 @@
     <div id="app">
 
         <header>
-            @auth
-                @php $u = auth()->user(); @endphp
 
-                @if ($u->hasRole('admin'))
-                    @include('partials.nav.admin')
-                @elseif ($u->hasRole('operatore'))
-                    @include('partials.nav.operator')
-                @elseif ($u->hasRole('cliente'))
-                    @include('partials.nav.client')
+            @isset($navPartial)
+                @include($navPartial)
+            @else
+                @auth
+                    @php $u = auth()->user(); @endphp
+
+                    @if ($u->hasRole('admin'))
+                        @include('partials.nav.admin')
+                    @elseif ($u->hasRole('operatore'))
+                        @include('partials.nav.operator')
+                    @elseif ($u->hasRole('cliente'))
+                        @include('partials.nav.client')
+                    @else
+                        @include('partials.nav.guest')
+                    @endif
                 @else
                     @include('partials.nav.guest')
-                @endif
-            @else
-                @include('partials.nav.guest')
-            @endauth
+                @endauth
+            @endisset
 
 
             {{-- PAGE HEADER (titolo, contatori, ecc.) opzionale --}}
