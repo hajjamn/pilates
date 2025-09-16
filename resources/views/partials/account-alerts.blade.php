@@ -1,4 +1,4 @@
-<div class="container mt-2">
+<div class="container">
     @php $u = auth()->user(); @endphp
 
     {{-- Avviso: email non verificata (evita la pagina di notice per non duplicare) --}}

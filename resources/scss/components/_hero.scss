@@ -1,0 +1,94 @@
+/* Component: Hero con video background (mobile-first) */
+/* Dipendenze: Bootstrap per utilità di layout/spaziatura */
+
+/* Wrapper principale dell'hero */
+.hero {
+    position: relative;
+    overflow: hidden;
+    /* evita scroll dovuto al media assoluto */
+    isolation: isolate;
+    /* crea stacking context per z-index puliti */
+    background-color: #000;
+    /* fallback dietro al video */
+}
+
+/* Contenitore del media: video/iframe/img */
+.hero__media {
+    position: absolute;
+    inset: 0;
+    /* top/right/bottom/left: 0 */
+    z-index: 0;
+}
+
+/* Qualsiasi media dentro l'hero: copri tutta l’area */
+.hero__media>video,
+.hero__media>iframe,
+.hero__media>img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* riempi mantenendo proporzioni */
+    object-position: center;
+}
+
+/* Overlay per contenuti (logo, bottoni, testo) */
+.hero__overlay {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.35) 0%, // più scuro in alto
+            rgba(0, 0, 0, 0.2) 40%, // intermedio
+            rgba(0, 0, 0, 0) 100% // trasparente in basso
+        );
+}
+
+/* Riduzione movimento: se l’utente preferisce meno animazioni, fermiamo il video */
+@media (prefers-reduced-motion: reduce) {
+    .hero__media>video {
+        animation: none !important;
+    }
+}
+
+/* Variante per usare un’immagine statica come fallback o “cover” */
+.hero--with-image .hero__media>img {
+    display: block;
+}
+
+/* Se usi iframe YouTube come background (ultima spiaggia):
+   rimuovi i bordi e lascia che copra tutta l’area */
+.hero--with-yt .hero__media>iframe {
+    border: 0;
+    pointer-events: none;
+    /* evita interazioni sullo sfondo */
+}
+
+.hero__overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.5) 0%, // scuro in alto
+            rgba(0, 0, 0, 0.2) 40%, // medio
+            rgba(0, 0, 0, 0) 100% // trasparente in basso
+        );
+    z-index: -1;
+}
+
+
+/* Altezza hero:
+   - su mobile lasciamo content-driven + padding verticali (via Bootstrap, es. py-5)
+   - da md in su possiamo garantire una "hero" piena */
+@media (min-width: 768px) {
+    .hero {
+        min-height: 100vh;
+    }
+}
+
+.logo-wrapper {
+    display: inline-block;
+    padding: 1rem;
+    background-color: rgba(244, 244, 242, 0.9); // offwhite
+    border-radius: 50%; // cerchio
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}

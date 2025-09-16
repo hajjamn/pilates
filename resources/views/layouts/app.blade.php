@@ -17,6 +17,8 @@
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+
 
     <!-- Usando Vite -->
     @vite(['resources/js/app.js'])
@@ -59,7 +61,7 @@
         </header>
 
         <main>
-            <div class="container">
+            <div class="container-fluid px-0 py-0">
 
                 @auth
                     @include('partials.account-alerts')
@@ -68,6 +70,16 @@
                 @yield('content')
             </div>
         </main>
+
+        {{-- Footer solo per guest e clienti --}}
+        @auth
+            @if (auth()->user()->hasRole('cliente'))
+                @include('partials.footer')
+            @endif
+        @else
+            @include('partials.footer')
+        @endauth
+
 
     </div>
 

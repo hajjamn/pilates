@@ -1,4 +1,4 @@
-<div class="mt-2 mb-3">
+<div class="">
     {{-- Status specifici (es. re-invio verifica email) --}}
     @if (session('status') === 'verification-link-sent')
         <div class="alert alert-success alert-dismissible fade show" role="alert">

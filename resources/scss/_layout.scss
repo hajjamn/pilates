@@ -31,3 +31,50 @@
         max-height: calc(var(--navbar-h) - (var(--bs-navbar-padding-y) * 2));
     }
 }
+
+// Footer
+.footer {
+    background-color: $brand-offwhite; // colore della palette
+    border-top: 1px solid rgba(0, 0, .1);
+}
+
+// ====================================
+// Navbar + Onda decorativa
+// ====================================
+
+// La NAV diventa il contesto per l’assoluto
+.navbar-layer {
+    position: relative;
+    z-index: 1030; // sopra al contenuto
+}
+
+.navbar-wave {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    transform: translateY(-1px);
+    height: 40px;
+    line-height: 0;
+    pointer-events: none;
+    z-index: 1029;
+}
+
+@media (min-width: 768px) {
+    .navbar-wave {
+        height: 72px;
+    }
+}
+
+.navbar-wave svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.navbar-wave path {
+    fill: $brand-green-700;
+    /* stesso colore navbar */
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .25));
+    /* separazione */
+}
