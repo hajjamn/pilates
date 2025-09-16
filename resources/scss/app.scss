@@ -1,9 +1,9 @@
 @import '~bootstrap/scss/bootstrap';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import 'variables';
-@import 'custom-bootstrap';
+@import 'layout';
 @import 'brand-buttons';
-@import 'dev-header';
+@import 'utilities';
 
 .text-whatsapp {
     color: #25D366;

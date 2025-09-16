@@ -2,37 +2,10 @@
 // Brand Buttons (mobile-first)
 // ===============================
 
-// ---- Palette Brand (dal file inviato)
-$brand-green-700: #798C7B; // primario
-$brand-green-600: #859A87;
-$brand-green-400: #A4B4A5;
-$brand-green-200: #C2CDC3;
-$brand-offwhite: #F4F4F2;
+// Importa solo le variabili/mappa dal file centralizzato
+@use "variables" as v;
 
-// ---- Accents proposti
-$accent-slate-600: #4F6D7A;
-$accent-slate-700: #3F5862;
-$accent-slate-800: #2F444B;
-
-$accent-indigo-600: #4B5D9A;
-$accent-indigo-700: #3C4B7A;
-$accent-indigo-800: #2B385A;
-
-$accent-saffron-500: #D4A62A; // usare testo scuro
-$accent-saffron-600: #B98F23;
-$accent-saffron-700: #99781D;
-
-// ---- Text colors
-$text-on-dark: #fff;
-$text-on-warm: #1A1A1A;
-
-// ---- Focus rings
-$focus-brand: rgba(121, 140, 123, .35);
-$focus-slate: rgba(79, 109, 122, .35);
-$focus-indigo: rgba(75, 93, 154, .35);
-$focus-saffron: rgba(212, 166, 42, .35);
-
-// ---- Transition
+// Se tieni la transition qui, va bene:
 $btn-transition: color .15s ease-in-out,
   background-color .15s ease-in-out,
   border-color .15s ease-in-out,
@@ -42,7 +15,6 @@ $btn-transition: color .15s ease-in-out,
 // ===============================
 // Mixin per generare bottoni
 // ===============================
-
 @mixin my-btn($name, $bg, $hover, $active, $text, $focus) {
   .my-btn-#{$name} {
     @extend .btn;
@@ -78,7 +50,6 @@ $btn-transition: color .15s ease-in-out,
     }
   }
 
-  // Outline
   .my-btn-#{$name}-outline {
     @extend .btn;
     color: $bg;
@@ -120,9 +91,20 @@ $btn-transition: color .15s ease-in-out,
 // ===============================
 
 // Brand verde
-@include my-btn("brand-primary", $brand-green-700, $brand-green-600, $brand-green-400, $text-on-dark, $focus-brand);
+@include my-btn("brand-primary",
+  v.$brand-green-700,
+  v.$brand-green-600,
+  v.$brand-green-400,
+  v.$text-on-dark,
+  v.$focus-brand);
 
 // Accents
-@include my-btn("accent-slate", $accent-slate-600, $accent-slate-700, $accent-slate-800, $text-on-dark, $focus-slate);
-@include my-btn("accent-indigo", $accent-indigo-600, $accent-indigo-700, $accent-indigo-800, $text-on-dark, $focus-indigo);
-@include my-btn("accent-saffron", $accent-saffron-500, $accent-saffron-600, $accent-saffron-700, $text-on-warm, $focus-saffron);
+@include my-btn("accent-slate",
+  v.$accent-slate-600, v.$accent-slate-700, v.$accent-slate-800,
+  v.$text-on-dark, v.$focus-slate);
+@include my-btn("accent-indigo",
+  v.$accent-indigo-600, v.$accent-indigo-700, v.$accent-indigo-800,
+  v.$text-on-dark, v.$focus-indigo);
+@include my-btn("accent-saffron",
+  v.$accent-saffron-500, v.$accent-saffron-600, v.$accent-saffron-700,
+  v.$text-on-warm, v.$focus-saffron);

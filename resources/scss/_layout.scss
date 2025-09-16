@@ -1,0 +1,33 @@
+// ===============================
+// Layout generali
+// ===============================
+
+// Navbar con altezze fisse per breakpoint
+.navbar-fixed-height {
+    /* mobile-first */
+    --navbar-h: 56px;
+    min-height: var(--navbar-h);
+
+    @media (min-width: 768px) {
+        /* md */
+        --navbar-h: 64px;
+    }
+
+    @media (min-width: 1200px) {
+        /* xl */
+        --navbar-h: 72px;
+    }
+
+    .navbar-brand {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .navbar-brand img {
+        display: block;
+        height: auto;
+        width: auto;
+        /* evita distorsioni */
+        max-height: calc(var(--navbar-h) - (var(--bs-navbar-padding-y) * 2));
+    }
+}
