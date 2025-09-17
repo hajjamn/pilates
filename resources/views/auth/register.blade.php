@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container mt-4">
+    <div class="container mt-5 py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
@@ -63,25 +63,22 @@
                             </div>
 
                             <div class="mb-4 row">
-    <label for="phone" class="col-md-4 col-form-label text-md-right">Telefono (opz.)</label>
+                                <label for="phone" class="col-md-4 col-form-label text-md-right">Telefono (opz.)</label>
 
-    <div class="col-md-6">
-        <input id="phone" type="tel"
-               class="form-control @error('phone') is-invalid @enderror"
-               name="phone"
-               value="{{ old('phone') }}"
-               inputmode="tel"
-               placeholder="+39 333 1234567">
+                                <div class="col-md-6">
+                                    <input id="phone" type="tel"
+                                        class="form-control @error('phone') is-invalid @enderror" name="phone"
+                                        value="{{ old('phone') }}" inputmode="tel" placeholder="+39 333 1234567">
 
-        <div class="form-text">Formato consigliato: internazionale (es. +39…)</div>
+                                    <div class="form-text">Formato consigliato: internazionale (es. +39…)</div>
 
-        @error('phone')
-            <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-            </span>
-        @enderror
-    </div>
-</div>
+                                    @error('phone')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
 
 
                             <div class="mb-4 row">
@@ -113,8 +110,8 @@
 
                             <div class="mb-4 row mb-0">
                                 <div class="col-md-6 offset-md-4">
-                                    <button type="submit" class="btn btn-primary">
-                                        {{ __('Register') }}
+                                    <button type="submit" class="btn my-btn-brand-primary">
+                                        {{ __('Registrati') }}
                                     </button>
                                 </div>
                             </div>

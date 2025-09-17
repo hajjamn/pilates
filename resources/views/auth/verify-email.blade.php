@@ -15,11 +15,11 @@
                         @endif
 
                         {{ __('Prima di procedere, controlla la tua casella mail per un link di verifica.') }}
-                        {{ __('Se non hai ricevuto la mail,') }},
+                        {{ __('Se non hai ricevuto la mail') }},
                         <form class="d-inline" method="POST" action="{{ route('verification.send') }}">
                             @csrf
                             <button type="submit"
-                                class="btn btn-link p-0 m-0 align-baseline">{{ __('clicca qui per richiederne di nuovo.') }}</button>.
+                                class="btn btn-link p-0 m-0 align-baseline">{{ __('clicca qui per richiederla di nuovo') }}</button>.
                         </form>
                     </div>
                 </div>

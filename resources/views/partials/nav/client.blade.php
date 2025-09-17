@@ -1,10 +1,10 @@
-<nav class="navbar bg-white shadow-sm border-bottom">
+<nav class="navbar my-bg-brand-700 shadow-sm border-bottom">
     <div class="container py-2 w-100">
         <div class="row align-items-center w-100">
             {{-- SX: Logo -> dashboard --}}
             <div class="col-4 col-md-3 d-flex align-items-center">
                 <a class="navbar-brand d-inline-flex align-items-center" href="{{ route('client.dashboard') }}">
-                    <img src="{{ Vite::asset('resources/img/nav-logo.png') }}" alt="Logo" style="height: 40px;">
+                    <img src="{{ Vite::asset('resources/img/logo-no-space.png') }}" alt="Logo" style="height: 40px;">
                 </a>
             </div>
 
