@@ -1,12 +1,17 @@
 <nav class="navbar navbar-expand-md navbar-dark my-bg-brand-700 shadow-sm navbar-fixed-height navbar-layer"
     aria-label="Main">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
-            <img src="{{ Vite::asset('resources/img/logo-no-space.png') }}" alt="Logo" class="img-fluid">
+    <div class="container d-flex align-items-center">
+        <!-- RENDI L'ANCHOR FULL-WIDTH E SENZA FLEX UTILS -->
+        <a class="navbar-brand brand-with-title" href="{{ url('/') }}">
+            <span class="brand-logo-circle">
+                <img src="{{ Vite::asset('resources/img/logo-no-space.png') }}" alt="Logo">
+            </span>
+
+            <!-- Titolo centrato -->
+            <h2 class="brand-title my-header-title">Centro Pilates - Ada Turco</h2>
         </a>
     </div>
 
-    {{-- Onda attaccata al fondo della NAV --}}
     <div class="navbar-wave" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100" preserveAspectRatio="none"
             style="transform: scaleX(-1);">
