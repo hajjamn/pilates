@@ -2,14 +2,16 @@
 @section('page-title', 'Homepage')
 
 @section('content')
-    <div class="container">
+    <div class="container mt-4">
 
-        <h2 class="h4">Calendario Prenotazioni</h2>
-        <div class="d-grid gap-2 my-3" style="max-width:520px;">
-            <a class="btn btn-primary" href="{{ route('calendar.lessons.index') }}">Questa settimana ▸</a>
+        <h2 class="h4 text-center">Calendario delle Prenotazioni</h2>
+        <div class="d-flex justify-content-center my-3">
+            <a class="btn my-btn-accent-saffron px-3" href="{{ route('calendar.lessons.index') }}">
+                Questa settimana <i class="fa-solid fa-chevron-right"></i>
+            </a>
         </div>
 
-        <h2 class="h4 mt-4">Lezioni Prenotate</h2>
+        <h2 class="h4 mt-4 text-center mb-4">Lezioni Prenotate</h2>
 
         @if ($nextLesson)
             <div class="card shadow-sm" style="max-width: 720px;">
@@ -17,8 +19,8 @@
                     <div class="text-muted small mb-1">Prossima Lezione</div>
 
                     <h3 class="h5 mb-2">
-                        {{ $nextLesson->starts_at->translatedFormat('l d F') }}
-                        · {{ $nextLesson->starts_at->format('H:i') }}
+                        {{ ucfirst($nextLesson->starts_at->translatedFormat('l d F')) }}
+                        - {{ $nextLesson->starts_at->format('H:i') }}
                     </h3>
 
                     <div class="row">
@@ -34,8 +36,8 @@
 
                     {{-- CTA segnaposto --}}
                     <div class="mt-3 d-flex gap-2">
-                        <a href="{{ route('client.lessons.show', $nextLesson) }}" class="btn btn-sm btn-outline-primary">
-                            Dettagli lezione ▸
+                        <a href="{{ route('client.lessons.show', $nextLesson) }}" class="btn btn-sm my-btn-brand-primary">
+                            Dettagli lezione <i class="fa-solid fa-chevron-right"></i>
                         </a>
                     </div>
                 </div>
@@ -47,16 +49,16 @@
         @endif
 
         <div class="d-grid gap-2 my-3" style="max-width:520px;">
-            <a class="btn btn-outline-secondary" href="{{ route('client.lessons.index') }}">
-                Elenco lezioni ▸
-            </a>
+            {{-- <a class="btn btn-outline-secondary" href="{{ route('client.lessons.index') }}">
+                Tutte le prenotazioni <i class="fa-solid fa-chevron-right"></i>
+            </a> --}}
             <a class="btn btn-outline-secondary"
                 href="{{ route('client.lessons.index', ['time' => 'future', 'status' => 'booked']) }}">
-                Prossime lezioni ▸
+                Prenotazioni future <i class="fa-solid fa-chevron-right"></i>
             </a>
             <a class="btn btn-outline-secondary"
                 href="{{ route('client.lessons.index', ['time' => 'past', 'status' => 'all']) }}">
-                Storico lezioni ▸
+                Storico prenotazioni <i class="fa-solid fa-chevron-right"></i>
             </a>
         </div>
     </div>
