@@ -57,7 +57,7 @@ $isPast = $lesson->starts_at->isPast();
     $canCancel = (bool) $activeBooking && $workingMinutes >= 6 * 60;
 @endphp
 
-<div class="card h-100 shadow-sm">
+<div class="card h-100 shadow-sm my-bg-brand-400">
     <div class="card-body d-flex flex-column gap-2">
         <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -100,12 +100,12 @@ $isPast = $lesson->starts_at->isPast();
             {{-- Pulsante principale (prenota / annulla / stato) --}}
             @if ($activeBooking)
                 @if ($canCancel)
-                    <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal"
                         data-bs-target="#cancelModal-{{ $lesson->id }}">
                         Annulla prenotazione
                     </button>
                 @else
-                    <button class="btn btn-outline-danger w-100" disabled
+                    <button class="btn btn-danger w-100" disabled
                         title="Cancellazione non consentita: servono almeno 6 ore lavorative (09:00–21:00) prima dell’inizio.">
                         Annulla prenotazione
                     </button>
@@ -118,7 +118,7 @@ $isPast = $lesson->starts_at->isPast();
                 @elseif ($isFull)
                     <button class="btn btn-secondary w-100" disabled>Posti esauriti</button>
                 @else
-                    <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                    <button type="button" class="btn my-btn-accent-saffron text-white w-100" data-bs-toggle="modal"
                         data-bs-target="#bookModal-{{ $lesson->id }}">
                         Prenotati
                     </button>
@@ -169,8 +169,16 @@ $activePackages = auth()->user()
                         </p>
 
                         <div class="small text-muted mt-2">
-                            Posti rimasti: {{ $seatsLeft }} • La cancellazione è possibile solo se ci sono almeno
-                            <strong>6 ore</strong> (contate tra <strong>09:00–21:00</strong>) prima dell’inizio.
+                            <p>
+                                Posti rimasti: {{ $seatsLeft }}
+                            </p>
+                            <em>
+                                NB: La cancellazione è possibile solo se restano
+                                almeno
+                                <strong>6 ore</strong> (contate tra le <strong>09:00 e le 21:00</strong>) prima
+                                dell’inizio.
+                            </em>
+
                         </div>
 
                         @if ($hasPackages)
@@ -215,7 +223,7 @@ $activePackages = auth()->user()
 
                     <div class="modal-footer">
                         <button class="btn btn-light" data-bs-dismiss="modal" type="button">Annulla</button>
-                        <button type="submit" class="btn btn-primary">Conferma iscrizione</button>
+                        <button type="submit" class="btn btn-success">Conferma iscrizione</button>
                     </div>
                 </form>
             </div>

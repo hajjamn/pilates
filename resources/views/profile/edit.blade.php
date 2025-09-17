@@ -3,7 +3,7 @@
 @section('page-title', 'Profilo')
 
 @section('content')
-    <div class="container" style="max-width: 900px;">
+    <div class="container mt-4" style="max-width: 900px;">
         {{-- Stato verifica email (ridondante rispetto al banner, ma utile qui) --}}
         @if (!$user->hasVerifiedEmail())
             <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
@@ -91,7 +91,7 @@
                             </div>
 
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">Salva modifiche</button>
+                                <button type="submit" class="btn my-btn-brand-primary">Salva modifiche</button>
                                 <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">Annulla</a>
                             </div>
                         </form>
