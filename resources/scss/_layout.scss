@@ -179,3 +179,40 @@
 .navbar-fixed-height .navbar-brand.brand-with-title .brand-title--sm {
     font-size: .95em;
 }
+
+.navbar .nav-link.text-white {
+    opacity: .95;
+
+    &:hover,
+    &:focus {
+        opacity: 1;
+    }
+}
+
+/* Divider dentro i dropdown-menu (sfondo chiaro) -> colore default */
+.dropdown-menu .dropdown-divider {
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.navbar-collapse hr.dropdown-divider {
+    width: 100%;
+    margin: .5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.5); // colore bianco semitrasparente o pieno
+}
+
+.navbar-collapse .dropdown-menu hr.dropdown-divider {
+    border-top: 1px solid rgba(0, 0, 0, 0.15); // mantiene il grigio nei dropdown normali
+}
+
+@media (max-width: 767.98px) {
+    .header--sticky {
+        position: sticky;
+        top: 0;
+        /* considera: top: env(safe-area-inset-top); per iOS */
+        z-index: 1030;
+        /* sopra al contenuto e sufficiente per dropdown */
+        /* opzionali */
+        backdrop-filter: saturate(180%) blur(6px);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .08);
+    }
+}
