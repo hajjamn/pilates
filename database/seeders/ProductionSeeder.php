@@ -24,7 +24,7 @@ class ProductionSeeder extends Seeder
 
     /* 
 
-    cd /var/www/generazionedigitaleprogrammi/dreamscenter
+    cd /var/www/generazionedigitaleprogrammi/adaturcopilates
 git stash
 git pull origin main
 git stash pop

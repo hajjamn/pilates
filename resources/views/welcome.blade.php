@@ -5,8 +5,7 @@
         <div class="hero">
             {{-- Media di background (video file) --}}
             <div class="hero__media">
-                <video autoplay muted loop playsinline preload="metadata"
-                    poster="{{ Vite::asset('resources/images/hero-poster.jpg') }}">
+                <video autoplay muted loop playsinline preload="metadata">
                     <source src="{{ Vite::asset('resources/videos/hero.mp4') }}" type="video/mp4">
                 </video>
 
