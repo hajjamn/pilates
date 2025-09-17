@@ -2,11 +2,11 @@
 @section('page-title', 'Le mie lezioni')
 
 @section('content')
-    <div class="container" style="max-width: 1000px;">
+    <div class="container mt-4" style="max-width: 1000px;">
 
         {{-- Back + titolo --}}
         <a href="{{ url()->previous() }}" class="btn btn-secondary mb-3">
-            ← Indietro
+            <i class="fa-solid fa-chevron-left"></i> Indietro
         </a>
 
         {{-- Barra filtri --}}
@@ -64,8 +64,8 @@
                 </div>
 
                 <div class="ms-auto">
-                    <button class="btn btn-outline-primary btn-sm">Applica</button>
-                    <a class="btn btn-link btn-sm" href="{{ route('client.lessons.index') }}">Azzera</a>
+                    <button class="btn my-btn-brand-primary btn-sm">Applica</button>
+                    <a class="btn btn-danger btn-sm" href="{{ route('client.lessons.index') }}">Azzera</a>
                 </div>
             </div>
         </form>

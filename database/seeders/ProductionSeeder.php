@@ -21,4 +21,17 @@ class ProductionSeeder extends Seeder
             PackageSeeder::class,
         ]);
     }
+
+    /* 
+
+    cd /var/www/generazionedigitaleprogrammi/dreamscenter
+git stash
+git pull origin main
+git stash pop
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan config:cache
+
+    */
 }

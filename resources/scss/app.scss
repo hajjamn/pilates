@@ -1,8 +1,33 @@
 @import '~bootstrap/scss/bootstrap';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import 'variables';
-@import 'custom-bootstrap';
+@import 'layout';
+@import 'brand-buttons';
+@import 'components/hero';
+@import 'calendar';
+@import 'client_user_packages';
+@import 'utilities';
 
 .text-whatsapp {
     color: #25D366;
+}
+
+html,
+body {
+    height: 100%; // necessario per 100vh reale
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#app>main {
+    flex: 1 0 auto; // si espande per occupare lo spazio
+}
+
+#app>header,
+#app>footer {
+    flex-shrink: 0; // header e footer non collassano
 }

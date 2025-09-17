@@ -1,0 +1,47 @@
+/* Utility per la hero (mobile-first) */
+.logo-hero {
+    max-width: 220px;
+}
+
+.hr-narrow {
+    max-width: 320px;
+}
+
+.copy-narrow {
+    max-width: 560px;
+}
+
+/* su viewport più ampi possiamo scalare un po' il logo */
+@media (min-width: 768px) {
+    .logo-hero {
+        max-width: 260px;
+    }
+}
+
+/* Utilities leggere per la hero (senza inline style) */
+
+/* Dimensione massima del logo in hero */
+.logo-hero {
+    max-width: 220px;
+}
+
+@media (min-width: 768px) {
+    .logo-hero {
+        max-width: 260px;
+    }
+}
+
+/* Separatore stretto e centrato */
+.hr-narrow {
+    max-width: 320px;
+}
+
+/* Testo descrizione con larghezza confortevole */
+.copy-narrow {
+    max-width: 560px;
+}
+
+/* Colore sfondo globale: offwhite consigliato */
+.body-offwhite {
+    background-color: #F4F4F2;
+}

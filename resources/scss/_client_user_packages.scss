@@ -1,0 +1,29 @@
+// Palette fallback (se non già definite)
+:root {
+    --my-accent-saffron: #F4C430;
+    --my-progress-muted: #CED4DA; // grigio tipo bs-gray-400
+}
+
+.client-user-packages {
+    .progress--thin {
+        height: .5rem;
+    }
+
+    /* Preferenza: via CSS var (BS 5.2/5.3) */
+    .progress--accent-saffron {
+        --bs-progress-bar-bg: var(--my-accent-saffron);
+    }
+
+    .progress--muted {
+        --bs-progress-bar-bg: var(--my-progress-muted);
+    }
+
+    /* Fallback robusto per tutte le versioni */
+    .progress--accent-saffron .progress-bar {
+        background-color: var(--my-accent-saffron) !important;
+    }
+
+    .progress--muted .progress-bar {
+        background-color: var(--my-progress-muted) !important;
+    }
+}

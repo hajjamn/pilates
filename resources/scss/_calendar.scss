@@ -1,0 +1,148 @@
+// container max 1100px come da requisito
+.container-narrow {
+    max-width: 1100px;
+}
+
+// pagina calendario
+.lc-page {
+
+    // pillola mese (sostituisce inline)
+    .month-pill {
+        border-radius: 9999px;
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        background: #e7efe9;
+        padding: .5rem 1rem;
+    }
+
+    // --- Weekbar ---
+    .weekbar-wrapper {
+        // gap gestito da Bootstrap (gap-2) ma lasciamo hook se serve
+    }
+
+    .week-nav-btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        @media (max-width: 380px) {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    .weekbar-viewport {
+        flex: 0 0 auto;
+        /* NON si espande su desktop/tablet: blocco centrato */
+        max-width: none;
+        width: auto;
+    }
+
+    @media (max-width: 576px) {
+        .weekbar-viewport {
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+
+    .weekbar-track {
+        display: flex;
+        gap: .25rem;
+        transition: transform .28s ease;
+
+        &.no-transition {
+            transition: none !important;
+        }
+
+        // layout: 7 colonne su telefoni stretti -> tutti i giorni sempre visibili
+        @media (max-width: 380px) {
+            display: grid !important;
+            grid-template-columns: repeat(7, 1fr);
+            gap: .25rem;
+        }
+    }
+
+    // pillola giorno
+    .day-pill {
+        padding: .375rem .625rem;
+        border-radius: .5rem;
+        border: 1px solid var(--bs-border-color, #d1d5db);
+        background: #f9fafb;
+        color: #374151;
+        text-align: center;
+        min-width: 0; // elimina vecchio min-width inline (48px)
+        font-weight: 600;
+
+        .day-dow {
+            font-size: .75rem;
+            line-height: 1;
+        }
+
+        .day-num {
+            font-size: .9rem;
+            line-height: 1.1;
+        }
+
+        &.is-selected {
+            border-color: $brand-green-700;
+            background: $brand-green-200; // riempimento visibile
+            color: $accent-slate-800; // testo ben leggibile
+        }
+
+        @media (max-width: 380px) {
+            padding: .25rem .375rem;
+
+            .day-dow {
+                font-size: .68rem;
+            }
+
+            .day-num {
+                font-size: .85rem;
+            }
+        }
+
+        @media (max-width: 340px) {
+            padding: .2rem .3rem;
+
+            .day-dow {
+                font-size: .62rem;
+            }
+
+            .day-num {
+                font-size: .8rem;
+            }
+        }
+    }
+
+    // select larghe ma non infinite
+    .minw-220 {
+        min-width: 220px;
+    }
+
+    // testi meta
+    .opacity-75.small {
+        font-size: .95rem;
+    }
+
+
+}
+
+/* --- Variante alternativa (scroll-snap) al posto della griglia, se la preferisci ---
+@media (max-width: 380px) {
+  .lc-page {
+    .weekbar-viewport {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+    }
+    .weekbar-track {
+      display: flex !important;
+      gap: .25rem !important;
+      min-width: max-content;
+    }
+    .weekbar-track a { scroll-snap-align: start; }
+  }
+}
+*/

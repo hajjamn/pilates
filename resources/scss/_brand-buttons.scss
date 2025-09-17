@@ -1,0 +1,110 @@
+// ===============================
+// Brand Buttons (mobile-first)
+// ===============================
+
+// Importa solo le variabili/mappa dal file centralizzato
+@use "variables" as v;
+
+// Se tieni la transition qui, va bene:
+$btn-transition: color .15s ease-in-out,
+  background-color .15s ease-in-out,
+  border-color .15s ease-in-out,
+  box-shadow .15s ease-in-out;
+
+
+// ===============================
+// Mixin per generare bottoni
+// ===============================
+@mixin my-btn($name, $bg, $hover, $active, $text, $focus) {
+  .my-btn-#{$name} {
+    @extend .btn;
+    color: $text;
+    background-color: $bg;
+    border-color: $bg;
+    font-weight: 600;
+    border-radius: .5rem;
+    transition: $btn-transition;
+
+    &:hover {
+      color: $text;
+      background-color: $hover;
+      border-color: $hover;
+    }
+
+    &:active,
+    &.active {
+      color: $text;
+      background-color: $active;
+      border-color: $active;
+    }
+
+    &:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 .25rem $focus;
+    }
+
+    &:disabled,
+    &.disabled {
+      opacity: .65;
+      pointer-events: none;
+    }
+  }
+
+  .my-btn-#{$name}-outline {
+    @extend .btn;
+    color: $bg;
+    background-color: transparent;
+    border-color: $bg;
+    font-weight: 600;
+    border-radius: .5rem;
+    transition: $btn-transition;
+
+    &:hover {
+      color: $text;
+      background-color: $bg;
+      border-color: $bg;
+    }
+
+    &:active,
+    &.active {
+      color: $text;
+      background-color: $hover;
+      border-color: $hover;
+    }
+
+    &:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 .25rem $focus;
+    }
+
+    &:disabled,
+    &.disabled {
+      opacity: .65;
+      pointer-events: none;
+    }
+  }
+}
+
+
+// ===============================
+// Bottoni pronti
+// ===============================
+
+// Brand verde
+@include my-btn("brand-primary",
+  v.$brand-green-700,
+  v.$brand-green-600,
+  v.$brand-green-400,
+  v.$text-on-dark,
+  v.$focus-brand);
+
+// Accents
+@include my-btn("accent-slate",
+  v.$accent-slate-600, v.$accent-slate-700, v.$accent-slate-800,
+  v.$text-on-dark, v.$focus-slate);
+@include my-btn("accent-indigo",
+  v.$accent-indigo-600, v.$accent-indigo-700, v.$accent-indigo-800,
+  v.$text-on-dark, v.$focus-indigo);
+@include my-btn("accent-saffron",
+  v.$accent-saffron-500, v.$accent-saffron-600, v.$accent-saffron-700,
+  v.$text-on-warm, v.$focus-saffron);

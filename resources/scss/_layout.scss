@@ -1,0 +1,181 @@
+// ===============================
+// Layout generali
+// ===============================
+
+// Navbar con altezze fisse per breakpoint
+.navbar-fixed-height {
+    /* mobile-first */
+    --navbar-h: 56px;
+    min-height: var(--navbar-h);
+
+    @media (min-width: 768px) {
+        /* md */
+        --navbar-h: 64px;
+    }
+
+    @media (min-width: 1200px) {
+        /* xl */
+        --navbar-h: 72px;
+    }
+
+    .navbar-brand {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .navbar-brand img {
+        display: block;
+        height: auto;
+        width: auto;
+        /* evita distorsioni */
+        max-height: calc(var(--navbar-h) - (var(--bs-navbar-padding-y) * 2));
+    }
+}
+
+.navbar-fixed-height .navbar-brand {
+
+    /* wrapper rotondo */
+    .brand-logo-circle {
+        /* diametro calcolato sull’altezza effettiva della navbar */
+        --logo-d: calc(var(--navbar-h) - (var(--bs-navbar-padding-y) * 2));
+        width: var(--logo-d);
+        height: var(--logo-d);
+        display: inline-grid;
+        place-items: center;
+        background: var(--my-offwhite);
+        /* = $brand-offwhite */
+        border-radius: 9999px;
+        /* leggero contorno per staccare dal verde della navbar */
+        box-shadow:
+            inset 0 0 0 1px rgba(0, 0, 0, .06),
+            0 1px 2px rgba(0, 0, 0, .05);
+    }
+
+    /* dimensione del png dentro il cerchio ( ~62% del diametro ) */
+    .brand-logo-circle img {
+        display: block;
+        width: auto;
+        height: auto;
+        max-height: calc(var(--logo-d) * .62);
+    }
+}
+
+// Footer
+.footer {
+    background-color: $brand-offwhite; // colore della palette
+    border-top: 1px solid rgba(0, 0, .1);
+}
+
+// ====================================
+// Navbar + Onda decorativa
+// ====================================
+
+// La NAV diventa il contesto per l’assoluto
+.navbar-layer {
+    position: relative;
+    z-index: 1030; // sopra al contenuto
+}
+
+.navbar-wave {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    transform: translateY(-1px);
+    height: 40px;
+    line-height: 0;
+    pointer-events: none;
+    z-index: 1029;
+}
+
+@media (min-width: 768px) {
+    .navbar-wave {
+        height: 72px;
+    }
+}
+
+.navbar-wave svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.navbar-wave path {
+    fill: $brand-green-700;
+    /* stesso colore navbar */
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .25));
+    /* separazione */
+}
+
+/* ============================
+   Navbar brand con titolo centrato
+   ============================ */
+
+.navbar-fixed-height .navbar-brand.brand-with-title {
+    /* l'anchor occupa tutta la larghezza della container */
+    position: relative;
+    display: block;
+    width: 100%;
+
+    /* dimensioni cerchio basate sull'altezza navbar */
+    --logo-d-base: calc(var(--navbar-h) - (var(--bs-navbar-padding-y) * 2));
+    --logo-d-mod: 1;
+    /* 1 = 100% del diametro base */
+    --logo-d: calc(var(--logo-d-base) * var(--logo-d-mod));
+}
+
+/* logo: fisso a sinistra e centrato verticalmente */
+.navbar-fixed-height .navbar-brand.brand-with-title .brand-logo-circle {
+    position: absolute;
+    inset-inline-start: 0;
+    /* = left, RTL-safe */
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--logo-d);
+    height: var(--logo-d);
+    display: inline-grid;
+    place-items: center;
+    background: var(--my-offwhite, #F4F4F2);
+    border-radius: 9999px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .05);
+    overflow: hidden;
+}
+
+/* immagine dentro il cerchio */
+.navbar-fixed-height .navbar-brand.brand-with-title .brand-logo-circle img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-height: calc(var(--logo-d) * .62);
+    /* regola questo fattore per scala logo */
+}
+
+/* titolo: occupa il 100%, centrato, senza accavallarsi al logo */
+.navbar-fixed-height .navbar-brand.brand-with-title .brand-title {
+    display: block;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-inline-start: calc(var(--logo-d) + .75rem);
+    /* spazio per il cerchio + gap */
+    padding-inline-end: .5rem;
+    margin: 0;
+    /* togli margine degli <h*> */
+}
+
+/* opzionali: manopole rapide */
+.navbar-fixed-height .navbar-brand.brand-with-title.brand-logo--lg {
+    --logo-d-mod: 1.08;
+}
+
+/* cerchio +8% */
+.navbar-fixed-height .navbar-brand.brand-with-title.brand-logo--sm {
+    --logo-d-mod: .92;
+}
+
+/* cerchio -8% */
+.navbar-fixed-height .navbar-brand.brand-with-title .brand-title--sm {
+    font-size: .95em;
+}

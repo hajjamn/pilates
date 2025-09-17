@@ -16,6 +16,7 @@ use App\Http\Controllers\Operator\OperatorController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
+use App\Http\Controllers\Client\UserPackageController as ClientUserPackageController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\UserPackageController as AdminUserPackageController;
@@ -268,6 +269,13 @@ Route::group([], function () {
 
             Route::get('/lezioni', [ClientLessonController::class, 'index'])
                 ->name('lessons.index');
+
+            Route::get('/pacchetti', [ClientUserPackageController::class, 'index'])
+                ->name('user-packages.index');
+
+            Route::get('/pacchetti/{userPackage}', [ClientUserPackageController::class, 'show'])
+                ->whereNumber('userPackage')
+                ->name('user-packages.show');
         });
 
     require __DIR__ . '/auth.php';

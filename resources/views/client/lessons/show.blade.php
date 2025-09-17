@@ -2,9 +2,9 @@
 @section('page-title', 'Dettaglio lezione')
 
 @section('content')
-    <div class="container mb-4" style="max-width: 760px;">
+    <div class="container mb-4 mt-4" style="max-width: 760px;">
         <a href="{{ url()->previous() }}" class="btn btn-secondary mb-3">
-            ← Indietro
+            <i class="fa-solid fa-chevron-left"></i> Indietro
         </a>
 
         <div class="card shadow-sm">
@@ -23,19 +23,12 @@
             <div class="card-body">
                 <div class="text-muted small mb-1">Lezione</div>
                 <h1 class="h5 mb-3">
-                    {{ $lesson->starts_at->translatedFormat('l d F') }} · {{ $lesson->starts_at->format('H:i') }}
+                    {{ ucfirst($lesson->starts_at->translatedFormat('l d F')) }} - {{ $lesson->starts_at->format('H:i') }}
                 </h1>
 
                 <div class="row g-3 mb-2">
                     <div class="col-md-6">
-                        <div><strong>Istruttore:</strong> {{ optional($lesson->operator)->full_name ?? '—' }}</div>
-                        <div><strong>Email istruttore:</strong>
-                            @if (optional($lesson->operator)->email)
-                                <a href="mailto:{{ $lesson->operator->email }}">{{ $lesson->operator->email }}</a>
-                            @else
-                                —
-                            @endif
-                        </div>
+                        <div><strong>Operatore:</strong> {{ optional($lesson->operator)->full_name ?? '—' }}</div>
                     </div>
                     <div class="col-md-6">
                         <div><strong>Sala:</strong> {{ optional($lesson->room)->name ?? '—' }}</div>
@@ -111,11 +104,6 @@
                             <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp non disponibile
                         </button>
                     @endif
-
-                    <a class="btn btn-outline-secondary btn-sm"
-                        href="{{ route('calendar.lessons.index', ['date' => $lesson->starts_at->toDateString()]) }}">
-                        Calendario
-                    </a>
 
                     @if (!$isLessonCanceled && $isFuture)
                         @if ($booking)
