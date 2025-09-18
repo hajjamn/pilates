@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\Client\ClientLessonController;
-use App\Http\Controllers\Client\DashboardController;
+use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
+use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
@@ -223,9 +224,8 @@ Route::group([], function () {
         ->name('operator.')
         ->group(function () {
 
-            Route::get('/', function () {
-                return view('operator.dashboard');
-            })->name('dashboard');
+            Route::get('/', [OperatorDashboardController::class, 'index'])
+                ->name('dashboard');
 
             Route::resource('/operatori', OperatorController::class)
                 ->names('operators')
@@ -260,7 +260,7 @@ Route::group([], function () {
         ->prefix('cliente')
         ->name('client.')
         ->group(function () {
-            Route::get('/', [DashboardController::class, 'index'])
+            Route::get('/', [ClientDashboardController::class, 'index'])
                 ->name('dashboard');
 
             Route::get('/lezioni/{lesson}', [ClientLessonController::class, 'show'])
