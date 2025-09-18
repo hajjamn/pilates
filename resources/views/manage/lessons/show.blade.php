@@ -6,88 +6,90 @@
     @php
         $isCanceled = (bool) $lesson->canceled;
         $statusLabel = $isCanceled ? 'Annullata' : ($lesson->starts_at?->isPast() ? 'Conclusa' : 'Attiva');
-        $statusStyle = $isCanceled
-            ? ['#fee2e2', '#991b1b']
+        $statusClass = $isCanceled
+            ? 'bg-danger-subtle text-danger fw-semibold'
             : ($lesson->starts_at?->isPast()
-                ? ['#e5e7eb', '#374151']
-                : ['#dcfce7', '#166534']);
+                ? 'bg-secondary-subtle text-secondary fw-semibold'
+                : 'bg-success-subtle text-success fw-semibold');
+
         $operatorName =
             $lesson->operator?->full_name ??
             trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
             $lesson->operator?->email ?? '—';
-        $roomName = $lesson->room?->name ?? '—';
-    @endphp
-    <div class="container" style="max-width:900px;">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h1 class="h4 mb-0">
-                Lezione - {{ $lesson->starts_at?->isoFormat('D MMMM YYYY, HH:mm') }}
-            </h1>
 
+        $roomName = $lesson->room?->name ?? '—';
+        $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
+    @endphp
+
+    <div class="container my-4 operator-lesson-show">
+        <h2 class="h4 text-center mb-4">Dettaglio Lezione</h2>
+
+        {{-- Header titolo + azioni --}}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h3 class="h5 mb-2">
+                {{ ucfirst($lesson->starts_at->translatedFormat('l d')) }}
+                {{ ucfirst($lesson->starts_at->translatedFormat('F')) }}
+                - {{ $lesson->starts_at->format('H:i') }}
+            </h3>
             <div class="d-flex gap-2">
-                @if ($mode === 'admin')
-                    <a href="{{ route('lessons.edit', $lesson) }}" class="btn btn-primary btn-sm">
-                        Modifica
-                    </a>
-                @else
-                    <a href="{{ route('lessons.editLite', $lesson) }}" class="btn btn-primary btn-sm">
-                        Modifica
-                    </a>
+                {{-- Pulsanti azione --}}
+                <a href="{{ url()->previous() }}" class="btn btn-sm btn-secondary"><i class="fa-solid fa-chevron-left"></i>
+                    Indietro</a>
+                @if ($mode === 'operator')
+                    <a href="{{ route('lessons.editLite', $lesson) }}" class="btn btn-sm my-btn-brand-primary">Modifica</a>
                 @endif
 
-                @if ($mode === 'admin' || (auth()->user()?->hasRole('operatore') && (int) auth()->id() === (int) $lesson->operator_id))
+                @if ($mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id)
                     @if (!$isCanceled)
                         <form method="POST" action="{{ route('lessons.cancel', $lesson) }}"
                             class="d-inline cancel-lesson-form">
                             @csrf
-                            <button type="button" class="btn btn-outline-danger btn-sm open-cancel-modal"
+                            <button type="button" class="btn btn-sm btn-danger open-cancel-modal"
                                 data-lesson-id="{{ $lesson->id }}"
                                 data-lesson-time="{{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}"
-                                data-lesson-room="{{ $roomName }}"
-                                data-lesson-operator="{{ $operatorName }}">Annulla</button>
+                                data-lesson-room="{{ $roomName }}" data-lesson-operator="{{ $operatorName }}">
+                                Annulla
+                            </button>
                         </form>
                     @else
                         <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
                             @csrf
-                            <button class="btn btn-success btn-sm">Ripristina</button>
+                            <button class="btn btn-sm btn-success">Ripristina</button>
                         </form>
                     @endif
                 @endif
 
-                <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm">Indietro</a>
             </div>
-
         </div>
 
-        <div class="card mb-3">
-            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div>
-                    <div class="small text-muted">Stato</div>
-                    <span class="badge"
-                        style="background:{{ $statusStyle[0] }}; color:{{ $statusStyle[1] }}; font-weight:600;">
-                        {{ $statusLabel }}
-                    </span>
+        {{-- Card dettagli lezione --}}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body row g-3 small">
+                <div class="col-6 col-md-4">
+                    <div class="text-muted">Stato</div>
+                    <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
                 </div>
-                <div>
-                    <div class="small text-muted">Sala</div>
+                <div class="col-6 col-md-4">
+                    <div class="text-muted">Sala</div>
                     <div class="fw-semibold">{{ $roomName }}</div>
                 </div>
-                <div>
-                    <div class="small text-muted">Operatore</div>
+                <div class="col-6 col-md-4">
+                    <div class="text-muted">Operatore</div>
                     <div class="fw-semibold">{{ $operatorName }}</div>
                 </div>
-                <div>
-                    <div class="small text-muted">Capienza</div>
+                <div class="col-6 col-md-4">
+                    <div class="text-muted">Capienza</div>
                     <div class="fw-semibold">{{ $lesson->clients_count ?? 0 }} / {{ $lesson->max_clients }}</div>
                 </div>
-                <div>
-                    <div class="small text-muted">Manual override</div>
+                <div class="col-6 col-md-4">
+                    <div class="text-muted">Manual override</div>
                     <div class="fw-semibold">{{ $lesson->manual_override ? 'Sì' : 'No' }}</div>
                 </div>
             </div>
         </div>
 
-        {{-- Iscritti --}}
-        <div class="card mb-4">
+        {{-- Card iscritti --}}
+        <div class="card shadow-sm">
             <div class="card-header bg-light">
                 <strong>Iscritti</strong>
             </div>
@@ -112,6 +114,7 @@
                                         <th>Pacchetto</th>
                                         <th>Pagato</th>
                                         <th>Presenza</th>
+                                        <th class="text-end">Azioni</th>
                                     </tr>
                                 @endif
                             </thead>
@@ -147,38 +150,61 @@
 
                                         $pkg = $b->userPackage;
                                         $pkgLabel = $pkg?->package?->name
-                                            ? $pkg->package->name . ' (rimasti: ' . $pkg->lessons_remaining . ')'
+                                            ? $pkg->package->name /*  . ' (rimasti: ' . $pkg->lessons_remaining . ')' */
                                             : null;
 
                                         $paid = (bool) ($b->paid ?? false);
                                         $attended = (bool) ($b->attended ?? false);
+                                        $paidLocked =
+                                            $b->user_package_id !== null &&
+                                            auth()->user()?->hasRole('operatore') &&
+                                            !auth()->user()?->hasRole('admin');
                                     @endphp
                                     <tr>
                                         <td class="fw-semibold">{{ $fullName }}</td>
-                                        <td class="small">
-                                            @if ($u?->email)
-                                                <div>
-                                                    <a href="mailto:{{ $u->email }}"> <i
-                                                            class="fa-solid fa-envelope me-1"></i> {{ $u->email }}</a>
-                                                </div>
-                                            @endif
-                                            @if ($u->phone)
-                                                <div>
-                                                    @if ($waLink)
-                                                        <a href="{{ $waLink }}" target="_blank" rel="noopener"
-                                                            class="text-decoration-none">
-                                                            <i class="fa-brands fa-whatsapp me-1"></i>
-                                                            {{ $u->phone }}
-                                                        </a>
-                                                    @else
-                                                        <span>{{ $u->phone }}</span>
+                                        <td class="text-center">
+                                            <div class="dropdown d-inline-block" data-bs-display="static">
+                                                <button class="btn btn-link btn-sm p-0" type="button"
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="fa-solid fa-address-card fa-lg"></i>
+                                                    <span class="visually-hidden">Contatti</span>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    @if ($u?->email)
+                                                        <li>
+                                                            <a class="dropdown-item text-primary"
+                                                                href="mailto:{{ $u->email }}">
+                                                                <i
+                                                                    class="fa-solid fa-envelope me-2"></i>{{ $u->email }}
+                                                            </a>
+                                                        </li>
                                                     @endif
-                                                </div>
-                                            @endif
-                                            @unless ($u?->email || $u?->phone)
-                                                <span class="text-muted">—</span>
-                                            @endunless
+
+                                                    @if ($waLink)
+                                                        <li>
+                                                            <a class="dropdown-item text-whatsapp"
+                                                                href="{{ $waLink }}" target="_blank" rel="noopener">
+                                                                <i
+                                                                    class="fa-brands fa-whatsapp me-2"></i>{{ $u->phone }}
+                                                            </a>
+                                                        </li>
+                                                    @elseif ($u->phone)
+                                                        <li>
+                                                            <span class="dropdown-item-text">
+                                                                <i class="fa-solid fa-phone me-2"></i>{{ $u->phone }}
+                                                            </span>
+                                                        </li>
+                                                    @endif
+
+                                                    @unless ($u?->email || $u?->phone)
+                                                        <li>
+                                                            <span class="dropdown-item-text text-muted">Nessun contatto</span>
+                                                        </li>
+                                                    @endunless
+                                                </ul>
+                                            </div>
                                         </td>
+
                                         @if ($isCanceled)
                                             {{-- SOLO quando annullata: bottone Contattato --}}
                                             <td>
@@ -190,24 +216,56 @@
                                             </td>
                                         @else
                                             {{-- Vista normale: Pacchetto + Pagato + Presenza con toggle --}}
-                                            <td class="small">
-                                                @if ($pkgLabel)
-                                                    <span class="badge text-bg-light">{{ $pkgLabel }}</span>
+                                            <td class="small text-center">
+                                                @if ($isOperatorOnly)
+                                                    @if ($b->user_package_id)
+                                                        <span class="badge text-bg-light">Usato</span>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
                                                 @else
-                                                    <span class="text-muted">—</span>
+                                                    @if ($pkgLabel)
+                                                        <span class="badge text-bg-light">{{ $pkgLabel }}</span>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                <button class="btn btn-primary btn-sm toggle-paid"
-                                                    data-url="{{ route('bookings.togglePaid', $b) }}" type="button">
-                                                    {{ $paid ? '✓' : 'X' }}
+                                                @php $btnStyle = $paid ? 'btn-outline-success' : 'btn-outline-danger'; @endphp
+
+                                                <button
+                                                    class="btn btn-sm {{ $btnStyle }} toggle-paid {{ $paidLocked ? 'is-locked opacity-75' : '' }}"
+                                                    data-url="{{ route('bookings.togglePaid', $b) }}"
+                                                    @if ($paidLocked) disabled
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="Bloccato: pagamento tramite pacchetto" @endif
+                                                    type="button">
+
+                                                    @if ($paidLocked)
+                                                        <i class="fa-solid fa-lock"></i>
+                                                        <span class="visually-hidden">Pagamento bloccato (pacchetto)</span>
+                                                    @else
+                                                        {{ $paid ? '✓' : 'X' }}
+                                                    @endif
                                                 </button>
                                             </td>
+
                                             <td class="text-center">
-                                                <button type="button" class="btn btn-primary btn-sm toggle-attended"
-                                                    data-url="{{ route('bookings.toggleAttended', $b) }}">
+                                                <button
+                                                    class="btn btn-sm {{ $attended ? 'btn-outline-success' : 'btn-outline-danger' }} toggle-attended"
+                                                    data-url="{{ route('bookings.toggleAttended', $b) }}" type="button">
                                                     {{ $attended ? '✓' : 'X' }}
                                                 </button>
+                                            </td>
+                                            <td class="text-end">
+                                                <form method="POST" action="{{ route('bookings.cancel', $b) }}"
+                                                    class="d-inline remove-booking-form">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
+                                                </form>
                                             </td>
                                         @endif
                                     </tr>
@@ -218,9 +276,72 @@
                 @endif
             </div>
         </div>
+
+        {{-- Aggiunta Clienti --}}
+        @php
+            $isOperatorOwner = $mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id;
+            $atCapacity = ($lesson->clients_count ?? 0) >= (int) $lesson->max_clients;
+            $isPast = $lesson->starts_at->isPast();
+        @endphp
+
+        @if ($isOperatorOwner)
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <strong>Aggiungi cliente</strong>
+                </div>
+                <div class="card-body">
+
+                    @if ($isCanceled)
+                        <div class="alert alert-warning mb-0">Lezione annullata: non è possibile aggiungere iscritti.</div>
+                    @elseif ($atCapacity)
+                        <div class="alert alert-warning mb-3">Capienza massima raggiunta ({{ $lesson->max_clients }}).
+                        </div>
+                    @elseif ($isPast)
+                        <div class="alert alert-secondary mb-3">
+                            La lezione è già conclusa: puoi comunque aggiungere un partecipante, ti verrà chiesta conferma.
+                        </div>
+                    @endif
+
+                    <form class="add-booking-form" data-action="{{ route('bookings.store', $lesson) }}"
+                        {{-- flag per conferma se lezione conclusa --}} {{ $isPast ? 'data-is-past=1' : '' }}>
+                        @csrf
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-6 position-relative">
+                                <label class="form-label small">Cerca cliente</label>
+                                <input type="text" class="form-control form-control-sm client-search"
+                                    placeholder="Nome, email o telefono"
+                                    {{ $isCanceled || $atCapacity ? 'disabled' : '' }}>
+                                <input type="hidden" name="user_id" class="client-id">
+                                <div class="list-group position-absolute shadow-sm w-100 d-none client-results"
+                                    style="z-index:20; max-height:240px; overflow:auto;"></div>
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input mark-paid" type="checkbox" value="1"
+                                        id="markPaid" {{ $isCanceled || $atCapacity ? 'disabled' : '' }}>
+                                    <label class="form-check-label small" for="markPaid">Segna pagato</label>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-md-3 text-end">
+                                <button class="btn btn-sm my-btn-brand-primary w-100 add-booking-btn"
+                                    {{ $isCanceled || $atCapacity ? 'disabled' : '' }}>
+                                    Aggiungi
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- NB: per gli operatori niente pacchetti --}}
+                    </form>
+                </div>
+            </div>
+        @endif
+
     </div>
 
     @once
+        {{-- Modale Cancellazione --}}
         <div class="modal fade" id="lessonCancelModal" tabindex="-1" aria-labelledby="lessonCancelModalLabel"
             aria-hidden="true">
             <div class="modal-dialog">
@@ -244,6 +365,27 @@
                 </div>
             </div>
         </div>
+
+        {{-- Modale aggiunta cliente a lezione terminata --}}
+        <div class="modal fade" id="addPastConfirmModal" tabindex="-1" aria-labelledby="addPastConfirmModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addPastConfirmModalLabel">Conferma aggiunta a lezione conclusa</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                    </div>
+                    <div class="modal-body">
+                        La lezione è già conclusa. Sei sicuro di voler aggiungere un partecipante?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="button" class="btn btn-danger" id="confirmAddPastBtn">Aggiungi comunque</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     @endonce
 
 
@@ -277,6 +419,14 @@
                     });
                 }
 
+                function setToggleBtnState(btn, isOn) {
+                    // testo
+                    btn.textContent = isOn ? '✓' : 'X';
+                    // classi visive
+                    btn.classList.remove('btn-outline-success', 'btn-outline-danger', 'btn-success', 'btn-danger');
+                    btn.classList.add(isOn ? 'btn-outline-success' : 'btn-outline-danger');
+                }
+
                 document.addEventListener('click', async (e) => {
                     const paidBtn = e.target.closest('.toggle-paid');
                     const attBtn = e.target.closest('.toggle-attended');
@@ -286,6 +436,9 @@
                     e.preventDefault();
 
                     const btn = paidBtn || attBtn || contBtn;
+
+                    if (btn.classList.contains('is-locked') || btn.disabled) return;
+
                     const url = btn.dataset.url;
                     btn.disabled = true;
 
@@ -293,15 +446,17 @@
                         const res = await fetchJSON(url, {
                             method: 'POST'
                         });
+
                         if (paidBtn) {
                             const paid = !!res?.booking?.paid;
-                            btn.textContent = paid ? '✓' : 'X';
+                            setToggleBtnState(btn, paid);
                         } else if (attBtn) {
                             const attended = !!res?.booking?.attended;
-                            btn.textContent = attended ? '✓' : 'X';
+                            setToggleBtnState(btn, attended);
                         } else if (contBtn) {
+                            // opzionale: diamo anche qui feedback verde/rosso
                             const contacted = !!res?.booking?.contacted;
-                            btn.textContent = contacted ? '✓' : 'X';
+                            setToggleBtnState(btn, contacted);
                         }
                     } catch (err) {
                         alert(err.response?.message || 'Errore nell’aggiornamento');
@@ -311,6 +466,7 @@
                 });
             })();
         </script>
+
 
         <script>
             (function() {
@@ -346,6 +502,192 @@
                 document.getElementById('confirmLessonCancelBtn')?.addEventListener('click', () => {
                     if (currentCancelForm) {
                         currentCancelForm.submit();
+                    }
+                });
+            })();
+        </script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.bootstrap) {
+                    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+                }
+            });
+        </script>
+
+        <script>
+            (function() {
+                const CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                async function fetchJSON(url, opts = {}) {
+                    const base = {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': CSRF,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    };
+                    const r = await fetch(url, Object.assign(base, opts));
+                    if (!r.ok) {
+                        let data;
+                        try {
+                            data = await r.json();
+                        } catch (_) {}
+                        const err = new Error('Request failed');
+                        err.response = data || {};
+                        err.status = r.status;
+                        throw err;
+                    }
+                    return r.json();
+                }
+
+                // --- Conferma aggiunta se lezione conclusa ---
+                let pendingPastForm = null;
+                const pastModalEl = document.getElementById('addPastConfirmModal');
+                const pastModal = pastModalEl && (window.bootstrap ? new bootstrap.Modal(pastModalEl) : null);
+
+                document.getElementById('confirmAddPastBtn')?.addEventListener('click', () => {
+                    if (pendingPastForm) {
+                        pendingPastForm.dataset.confirmed = '1';
+                        pastModal?.hide();
+                        pendingPastForm.requestSubmit(); // rilancia submit ora confermato
+                        pendingPastForm = null;
+                    }
+                });
+
+                // --- Autocomplete + add booking (solo se esiste il form) ---
+                document.querySelectorAll('.add-booking-form').forEach(form => {
+                    const action = form.dataset.action;
+                    const searchInput = form.querySelector('.client-search');
+                    const results = form.querySelector('.client-results');
+                    const userIdInput = form.querySelector('.client-id');
+                    const markPaid = form.querySelector('.mark-paid');
+                    const addBtn = form.querySelector('.add-booking-btn');
+
+                    if (!searchInput) return;
+
+                    let lastQuery = '';
+                    let controller = null;
+
+                    const closeResults = () => {
+                        results.classList.add('d-none');
+                        results.innerHTML = '';
+                    };
+
+                    // Autocomplete
+                    searchInput.addEventListener('input', async () => {
+                        const q = searchInput.value.trim();
+                        userIdInput.value = '';
+                        if (q.length < 2) {
+                            closeResults();
+                            return;
+                        }
+
+                        lastQuery = q;
+                        if (controller) controller.abort();
+                        controller = new AbortController();
+
+                        try {
+                            const res = await fetchJSON("{{ route('clients.search') }}?q=" +
+                                encodeURIComponent(q), {
+                                    signal: controller.signal
+                                });
+                            const list = res?.data || [];
+                            if (q !== lastQuery) return;
+
+                            results.innerHTML = '';
+                            list.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action';
+                                btn.innerHTML =
+                                    `<strong>${item.name || '—'}</strong><br><small>${item.email || ''} ${item.phone ? ' · ' + item.phone : ''}</small>`;
+                                btn.addEventListener('click', () => {
+                                    searchInput.value = item.name || item.email || (
+                                        'Utente #' + item.id);
+                                    userIdInput.value = item.id;
+                                    closeResults();
+                                });
+                                results.appendChild(btn);
+                            });
+                            results.classList.toggle('d-none', list.length === 0);
+                        } catch (_) {
+                            /* ignore */ }
+                    });
+
+                    // Chiudi lista se clicchi fuori
+                    document.addEventListener('click', (ev) => {
+                        if (!results.contains(ev.target) && ev.target !== searchInput) closeResults();
+                    });
+
+                    // Submit "Aggiungi"
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+
+                        // Se la lezione è conclusa, chiedi conferma (una sola volta)
+                        if (form.dataset.isPast === '1' && !form.dataset.confirmed) {
+                            if (pastModal) {
+                                pendingPastForm = form;
+                                pastModal.show();
+                                return; // attendo conferma modale
+                            }
+                            // fallback senza Bootstrap
+                            if (!confirm('La lezione è già conclusa. Aggiungere comunque?')) return;
+                            form.dataset.confirmed = '1';
+                        }
+
+                        if (!userIdInput.value) {
+                            alert('Seleziona un cliente dall’elenco.');
+                            return;
+                        }
+
+                        addBtn.disabled = true;
+                        try {
+                            const payload = new URLSearchParams();
+                            payload.set('user_id', userIdInput.value);
+                            if (markPaid && markPaid.checked) payload.set('paid', '1');
+                            // NIENTE use_package per operatori
+
+                            await fetchJSON(action, {
+                                method: 'POST',
+                                body: payload
+                            });
+                            window.location.reload(); // semplice e robusto
+                        } catch (err) {
+                            const errors = err.response?.errors;
+                            const first = errors ? Object.values(errors)[0][0] : (err.response
+                                ?.message || 'Errore');
+                            alert(first);
+                        } finally {
+                            addBtn.disabled = false;
+                        }
+                    });
+                });
+
+                // --- Rimozione iscrizione (senza reload se vuoi) ---
+                document.addEventListener('submit', async (e) => {
+                    const form = e.target.closest('.remove-booking-form');
+                    if (!form) return;
+                    e.preventDefault();
+                    if (!confirm('Rimuovere questa prenotazione?')) return;
+                    try {
+                        const r = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': CSRF,
+                                'Accept': 'application/json'
+                            },
+                            body: new URLSearchParams(new FormData(form)),
+                        });
+                        if (r.ok) {
+                            form.closest('tr')?.remove();
+                        } else {
+                            alert('Errore nella rimozione');
+                        }
+                    } catch (_) {
+                        alert('Errore di rete');
                     }
                 });
             })();

@@ -47,15 +47,15 @@
             </div>
         @endif
 
-        {{-- Lezioni passate --}}
+        {{-- Lezioni concluse --}}
         @if ($pastLessons->count())
-            <h3 class="h5 mt-4 mb-3">Lezioni passate</h3>
+            <h3 class="h5 mt-4 mb-3">Lezioni concluse</h3>
             <div class="accordion" id="pastLessonsAccordion">
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="pastLessonsHeading">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                             data-bs-target="#pastLessonsCollapse">
-                            Vedi lezioni passate
+                            Vedi lezioni concluse
                         </button>
                     </h2>
                     <div id="pastLessonsCollapse" class="accordion-collapse collapse">
