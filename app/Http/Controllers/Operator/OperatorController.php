@@ -70,7 +70,7 @@ class OperatorController extends Controller
     {
         $this->isSelfOrAdmin($operator);
 
-        $futureLessonsQuery = $operator->operatedLessons()->with('room')->future()->orderBy('starts_at', 'desc');
+        $futureLessonsQuery = $operator->operatedLessons()->with('room')->future()->orderBy('starts_at', 'asc');
         $activeFutureLessons = $futureLessonsQuery->clone()->active()->get();
         $canceledFutureLessons = $futureLessonsQuery->clone()->canceled()->get();
 
