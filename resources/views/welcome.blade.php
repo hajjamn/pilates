@@ -5,11 +5,53 @@
         <div class="hero">
             {{-- Media di background (video file) --}}
             <div class="hero__media">
-                <video autoplay muted loop playsinline preload="metadata">
-                    <source src="{{ Vite::asset('resources/videos/hero.mp4') }}" type="video/mp4">
-                </video>
-
+                <video id="heroVideo" autoplay muted loop playsinline preload="metadata"></video>
+                <noscript>
+                    {{-- Fallback senza JS: carica il video orizzontale --}}
+                    <video autoplay muted loop playsinline preload="metadata">
+                        <source src="{{ Vite::asset('resources/videos/hero.mp4') }}" type="video/mp4">
+                    </video>
+                </noscript>
             </div>
+
+            @push('scripts')
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const videoEl = document.getElementById('heroVideo');
+                        const srcDesktop = "{{ Vite::asset('resources/videos/hero.mp4') }}";
+                        const srcVertical = "{{ Vite::asset('resources/videos/hero-vertical.mp4') }}";
+
+                        const mqPortrait = window.matchMedia('(orientation: portrait)');
+
+                        function setVideoSource() {
+                            const useVertical = mqPortrait.matches;
+                            const desiredSrc = useVertical ? srcVertical : srcDesktop;
+
+                            // Evita ricarichi inutili
+                            if (!videoEl.currentSrc || !videoEl.currentSrc.includes(desiredSrc)) {
+                                videoEl.pause();
+                                videoEl.src = desiredSrc;
+                                // Per Safari iOS è utile forzare il load prima del play
+                                videoEl.load();
+                                videoEl.play().catch(() => {
+                                    /* ignora eventuali blocchi autoplay */ });
+                            }
+                        }
+
+                        // Prima impostazione
+                        setVideoSource();
+
+                        // Reagisci a cambi orientamento / resize
+                        if (mqPortrait.addEventListener) {
+                            mqPortrait.addEventListener('change', setVideoSource);
+                        } else if (mqPortrait.addListener) { // Safari vecchi
+                            mqPortrait.addListener(setVideoSource);
+                        }
+                        window.addEventListener('resize', setVideoSource);
+                    });
+                </script>
+            @endpush
+
 
             {{-- Overlay contenuti (mobile-first) --}}
             <div class="hero__overlay">
