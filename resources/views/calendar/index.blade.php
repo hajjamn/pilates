@@ -468,6 +468,28 @@
                                     roomSel.addEventListener('change', applyDefault);
                                 });
                             </script>
+
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    // Auto-submit filtro SALA
+                                    const roomSel = document.getElementById('roomFilter');
+                                    const roomForm = document.getElementById('roomFilterForm');
+                                    if (roomSel && roomForm) {
+                                        roomSel.addEventListener('change', () => {
+                                            roomForm.requestSubmit ? roomForm.requestSubmit() : roomForm.submit();
+                                        });
+                                    }
+
+                                    // Auto-submit filtro OPERATORE (solo se presente nel markup)
+                                    const opSel = document.getElementById('operatorFilter');
+                                    const opForm = document.getElementById('operatorFilterForm');
+                                    if (opSel && opForm) {
+                                        opSel.addEventListener('change', () => {
+                                            opForm.requestSubmit ? opForm.requestSubmit() : opForm.submit();
+                                        });
+                                    }
+                                });
+                            </script>
                         @endpush
                     @endonce
 
