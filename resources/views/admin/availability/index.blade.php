@@ -105,7 +105,7 @@
                     <div class="card-body py-3">
                         <div class="text-muted small">Conflitti disp.</div>
                         <div class="fs-5 fs-sm-4">
-                            <span class="badge bg-secondary">{{ $health_counts['conflicts'] ?? 0 }}</span>
+                            <span class="badge bg-danger">{{ $health_counts['conflicts'] ?? 0 }}</span>
                         </div>
                     </div>
                 </div>
