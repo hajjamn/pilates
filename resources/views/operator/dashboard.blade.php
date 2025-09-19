@@ -29,6 +29,8 @@
                     </div>
                 </div>
             </div>
+        @else
+            <p class="text-muted text-center mb-4">Nessuna lezione in corso</p>
         @endif
 
         {{-- Lezioni future --}}
@@ -45,6 +47,8 @@
                     </a>
                 @endforeach
             </div>
+        @else
+            <p class="text-muted text-center mb-4">Nessuna lezione futura</p>
         @endif
 
         {{-- Lezioni concluse --}}
@@ -75,8 +79,9 @@
                     </div>
                 </div>
             </div>
+        @else
+            <p class="text-muted text-center">Nessuna lezione conclusa</p>
         @endif
-
 
     </div>
 @endsection
