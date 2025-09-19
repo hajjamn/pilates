@@ -108,3 +108,20 @@ $btn-transition: color .15s ease-in-out,
 @include my-btn("accent-saffron",
   v.$accent-saffron-500, v.$accent-saffron-600, v.$accent-saffron-700,
   v.$text-on-warm, v.$focus-saffron);
+
+@include my-btn("accent-coral",
+  v.$accent-coral-600, v.$accent-coral-700, v.$accent-coral-800,
+  v.$text-on-dark, v.$focus-coral);
+
+@include my-btn("accent-teal",
+  v.$accent-teal-600, v.$accent-teal-700, v.$accent-teal-800,
+  v.$text-on-dark, v.$focus-teal);
+
+@include my-btn("accent-plum",
+  v.$accent-plum-600, v.$accent-plum-700, v.$accent-plum-800,
+  v.$text-on-dark, v.$focus-plum);
+
+// Bottone “bianco” utile su card scure/colorate
+@include my-btn("neutral-white",
+  #ffffff, #f8f9fa, #ececec,
+  v.$text-on-warm, rgba(255, 255, 255, .35));

@@ -265,6 +265,17 @@ class LessonBookingController extends Controller
             abort(403);
         }
 
+        if ($actor->hasRole('operatore') && !$actor->hasRole('admin') && $booking->user_package_id) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Operazione non consentita: il pagamento è gestito tramite pacchetto.',
+                'booking' => [
+                    'id' => $booking->id,
+                    'paid' => (bool) $booking->paid,
+                ],
+            ], 403);
+        }
+
         $booking = $this->bookingService->togglePaid($booking, $actor);
 
         return response()->json([
@@ -272,6 +283,7 @@ class LessonBookingController extends Controller
             'booking' => $booking,
         ]);
     }
+
 
     public function toggleContacted(LessonUser $booking)
     {

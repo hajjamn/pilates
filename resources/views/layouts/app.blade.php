@@ -27,7 +27,7 @@
 <body>
     <div id="app">
 
-        <header>
+        <header class="{{ auth()->check() && auth()->user()->hasRole('operatore') ? 'header--sticky' : '' }}">
 
             @isset($navPartial)
                 @include($navPartial)

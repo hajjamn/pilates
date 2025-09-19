@@ -34,4 +34,13 @@ php artisan view:clear
 php artisan config:cache
 
     */
+
+    /* 
+
+    rm -rf public/build
+    npm ci
+    npm run build
+    php artisan optimize:clear
+
+    */
 }

@@ -1,0 +1,83 @@
+/* Pagination – compact + fix larghezze chevron
+   Funziona con il markup di Bootstrap (ul.pagination > li.page-item > a.page-link)
+   e non richiede modifiche alla view.                                  */
+
+.pagination {
+    /* dimensioni generali */
+    --pg-font-size: .875rem;
+    /* 14px */
+    --pg-height: 2rem;
+    /* 32px */
+    --pg-min-width: 2rem;
+    /* pulsanti quadrati per numeri/chevron */
+    --pg-px: .5rem;
+    /* padding orizzontale */
+    --pg-gap: .25rem;
+    /* spazio tra item se usi gap */
+
+    /* opzionale: se il tuo reset non usa gap, commenta pure */
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pg-gap);
+
+    .page-item {
+        /* evita che i li si estendano */
+        flex: 0 0 auto;
+    }
+
+    .page-link {
+        /* STOP al full width: inline-flex, non block */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        /* dimensioni compatte */
+        font-size: var(--pg-font-size);
+        padding: 0 var(--pg-px);
+        height: var(--pg-height);
+        min-width: var(--pg-min-width);
+        line-height: 1;
+        white-space: nowrap;
+
+        /* evita che prendano 100% in alcuni reset */
+        width: auto;
+
+        /* tocco di estetica */
+        border-radius: .375rem;
+        /* 6px, come btn-sm */
+    }
+
+    /* Chevron (prev/next) – assicurati che non si allarghino */
+    .page-item:first-child .page-link,
+    .page-item:last-child .page-link {
+        min-width: var(--pg-min-width);
+    }
+
+    /* Stati */
+    .page-item.active .page-link {
+        font-weight: 600;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: .55;
+        pointer-events: none;
+    }
+
+    /* Se ci sono icone <svg> o <i> dentro ai link, rendile proporzionate */
+    .page-link>svg,
+    .page-link>i {
+        width: 1em;
+        height: 1em;
+    }
+}
+
+/* Variante ancora più piccola (usa solo se vuoi stringere ulteriormente)
+   Aggiungi .pagination--xs all’ul.pagination (facoltativo) */
+.pagination.pagination--xs {
+    --pg-font-size: .8125rem;
+    /* 13px */
+    --pg-height: 1.75rem;
+    /* 28px */
+    --pg-min-width: 1.75rem;
+    --pg-px: .4rem;
+}

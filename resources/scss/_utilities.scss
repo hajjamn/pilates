@@ -45,3 +45,78 @@
 .body-offwhite {
     background-color: #F4F4F2;
 }
+
+.table-row-link {
+    cursor: pointer;
+}
+
+.table-row-link:hover {
+    background-color: var(--bs-light);
+}
+
+/* 3) Da pianificare (disponibilità senza lezione) */
+.cell-to-plan {
+    background-color: #FFC107 !important;
+    /* giallo alert-warning */
+}
+
+/* 2) Lezione fuori disponibilità (lezione presente ma niente disponibilità) */
+/* usa un arancione/ambra tenue, diverso dal rosso conflitto e dal giallo to-plan */
+.cell-out-of-availability {
+    background-color: #ffe0b2 !important;
+    /* ambra chiaro */
+}
+
+/* 4) Conflitto (più disponibilità nello stesso slot/sala) */
+.cell-conflict {
+    background-color: #f8d7da !important;
+    /* rosso chiaro alert-danger */
+}
+
+/* piccolo affordance */
+.table td.cell-to-plan,
+.table td.cell-out-of-availability,
+.table td.cell-conflict {
+    transition: background-color .15s;
+}
+
+/* Badge per lezioni fuori disponibilità */
+.bg-out-of-availability {
+    background-color: #ffe0b2 !important;
+    /* stesso colore cella */
+    color: #7a4f00 !important;
+    /* testo scuro per contrasto */
+}
+
+/* GENERATE / PANORAMICA: colori coerenti tra celle e badge */
+
+/* Da pianificare (disponibilità senza lezione) */
+.cell-to-plan {
+    background-color: #fff3cd !important;
+}
+
+.bg-to-plan {
+    background-color: #fff3cd !important;
+    color: #7a4f00 !important;
+}
+
+/* Conflitto disponibilità */
+.cell-conflict {
+    background-color: #f8d7da !important;
+}
+
+.bg-conflict {
+    background-color: #f8d7da !important;
+    color: #58151c !important;
+}
+
+/* Già presente (slot occupato / già creato) */
+.cell-exists {
+    background-color: #e7f1ff !important;
+}
+
+/* azzurrino soft (info) */
+.bg-exists {
+    background-color: #e7f1ff !important;
+    color: #084298 !important;
+}

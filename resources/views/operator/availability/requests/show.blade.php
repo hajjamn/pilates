@@ -30,10 +30,11 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="h4 mb-0">Richiesta #{{ $acr->id }}</h1>
-            <a href="{{ route('operator.availability.requests.index') }}" class="btn btn-outline-secondary">Torna</a>
+            <a href="{{ route('operator.availability.requests.index') }}" class="btn btn-secondary"><i
+                    class="fa-solid fa-chevron-left"></i> Elenco</a>
         </div>
 
-        @if (!empty($legend))
+        {{-- @if (!empty($legend))
             <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
                 @foreach ($legend as $rid => $info)
                     <span class="badge {{ $roomBadgeClass[$rid] ?? 'bg-secondary' }}"
@@ -41,7 +42,7 @@
                     <span class="me-3">{{ $info['name'] }}</span>
                 @endforeach
             </div>
-        @endif
+        @endif --}}
 
         <div class="card mb-3">
             <div class="card-body row g-3">
@@ -49,7 +50,7 @@
                     <div class="text-muted small">Stato</div>
                     <div class="fw-semibold">
                         @if ($acr->status === 'pending')
-                            <span class="badge bg-warning text-dark">Pending</span>
+                            <span class="badge bg-warning text-dark">In Attesa</span>
                         @elseif($acr->status === 'approved')
                             <span class="badge bg-success">Approvata</span>
                         @else
@@ -123,5 +124,9 @@
                 </div>
             </div>
         @endforeach
+    </div>
+    <div class="d-flex justify-content-center align-items-center mb-3">
+        <a href="{{ route('operator.availability.requests.index') }}" class="btn btn-secondary"><i
+                class="fa-solid fa-chevron-left"></i> Elenco</a>
     </div>
 @endsection
