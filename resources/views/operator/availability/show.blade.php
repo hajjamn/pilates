@@ -4,7 +4,6 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h1 class="h4 mb-0">Disponibilità settimanali — {{ $operatorName }}</h1>
-            <div class="small text-muted">0 = Lunedì … 6 = Domenica · Orari 09:00–21:00</div>
         </div>
         @php
             $badgePalette = [
@@ -40,7 +39,7 @@
         @endif
 
         <div class="d-flex flex-wrap gap-2 mb-3">
-            <a href="{{ route('operator.availability.requests.create') }}" class="btn btn-primary">
+            <a href="{{ route('operator.availability.requests.create') }}" class="btn my-btn-brand-primary">
                 Proponi Cambio
             </a>
             <a href="{{ route('operator.availability.requests.index') }}" class="btn btn-outline-secondary">

@@ -68,7 +68,7 @@ class AvailabilityController extends Controller
         $hasAny = $slots->isNotEmpty();
 
         return view('operator.availability.show', [
-            'operatorName' => $user->name,
+            'operatorName' => $user->full_name,
             'days' => $days,
             'hours' => $hours,
             'matrix' => $matrix,

@@ -383,9 +383,18 @@
 
                         <div class="col-12 col-md-3">
                             <label class="form-label small">Sala</label>
-                            <select name="room_id" class="form-select form-select-sm" required>
+                            <select id="qcCreateRoom" name="room_id" class="form-select form-select-sm" required>
                                 @foreach ($rooms as $room)
-                                    <option value="{{ $room->id }}">{{ $room->name }}</option>
+                                    @php
+                                        // Usa il campo che avete sul modello Room:
+                                        // prova in quest’ordine: default_max_clients, capacity, altrimenti fallback 7
+                                        $roomDefault = $room->default_max_clients ?? ($room->capacity ?? 7);
+                                        $selected = (string) old('room_id', $roomId ?? '') === (string) $room->id;
+                                    @endphp
+                                    <option value="{{ $room->id }}" data-default-max="{{ $roomDefault }}"
+                                        {{ $selected ? 'selected' : '' }}>
+                                        {{ $room->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -415,14 +424,50 @@
 
                         <div class="col-6 col-md-2">
                             <label class="form-label small">Capienza</label>
-                            <input type="number" name="max_clients" min="1" max="200"
+                            <input id="qcMaxClients" type="number" name="max_clients" min="1" max="200"
                                 class="form-control form-control-sm" required>
                         </div>
 
                         <div class="col-6 col-md-1 text-end">
-                            <button class="btn btn-primary btn-sm w-100">Crea</button>
+                            <button class="btn my-btn-brand-primary btn-sm w-100">Crea</button>
                         </div>
                     </form>
+
+                    @if ($mode === 'operator')
+                        @push('scripts')
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const roomSel = document.getElementById('qcCreateRoom');
+                                    const maxInp = document.getElementById('qcMaxClients');
+                                    if (!roomSel || !maxInp) return;
+
+                                    const getDefaultFromSelected = () => {
+                                        const opt = roomSel.selectedOptions && roomSel.selectedOptions[0] ?
+                                            roomSel.selectedOptions[0] :
+                                            roomSel.options[roomSel.selectedIndex];
+                                        const defStr = opt ? opt.getAttribute('data-default-max') : null;
+                                        const defNum = defStr ? parseInt(defStr, 10) : NaN;
+                                        return Number.isFinite(defNum) ? defNum : null;
+                                    };
+
+                                    const applyDefault = () => {
+                                        const def = getDefaultFromSelected();
+                                        if (def !== null) {
+                                            maxInp.value = def; // imposta il valore visibile
+                                            maxInp.setAttribute('value', def); // (opz.) aggiorna anche l’attributo
+                                        }
+                                    };
+
+                                    // Imposta all'avvio
+                                    applyDefault();
+
+                                    // Aggiorna ad ogni cambio sala
+                                    roomSel.addEventListener('change', applyDefault);
+                                });
+                            </script>
+                        @endpush
+                    @endif
+
                 </div>
             </div>
         @endif

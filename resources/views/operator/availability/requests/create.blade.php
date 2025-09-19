@@ -2,13 +2,19 @@
 
 @section('content')
     <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="h4 mb-0">Proponi modifiche — {{ $operatorName }}</h1>
-            <i>TODO: admin puo' aggiungere modifiche per gli altri?</i>
-            <a href="{{ route('operator.availability.show') }}" class="btn btn-outline-secondary">Torna alla vista</a>
+
+        {{-- Bottone indietro su riga separata --}}
+        <div class="mb-2">
+            <a href="{{ route('operator.availability.show') }}" class="btn btn-secondary">
+                <i class="fa-solid fa-chevron-left me-1"></i> Indietro
+            </a>
         </div>
 
-        {{-- 🔹 NEW: mappa colori per le stanze --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h4 mb-0">Proponi modifiche — {{ $operatorName }}</h1>
+        </div>
+
+        {{-- Mappa colori per le stanze --}}
         @php
             $badgePalette = [
                 'bg-primary',
@@ -28,7 +34,7 @@
             }
         @endphp
 
-        {{-- 🔹 NEW: legenda dinamica in alto (se disponibile) --}}
+        {{-- Legenda dinamica in alto (se disponibile) --}}
         @if (!empty($legend))
             <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
                 @foreach ($legend as $rid => $info)
@@ -83,18 +89,24 @@
                                             $current = is_null($current) ? '' : (string) (int) $current;
                                         @endphp
                                         <td>
-                                            <select name="slots[{{ $d['key'] }}][{{ $hour }}]"
-                                                class="form-select form-select-sm availability-select"
-                                                data-original="{{ $current }}">
-                                                <option value="" @selected($current === '')>—</option>
-
-                                                {{-- 🔹 CHANGED: opzioni dinamiche basate su $legend --}}
-                                                @foreach ($legend ?? [] as $rid => $info)
-                                                    <option value="{{ $rid }}" @selected($current === (string) $rid)>
-                                                        {{ $info['name'] }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            <div class="availability-cell position-relative">
+                                                <select name="slots[{{ $d['key'] }}][{{ $hour }}]"
+                                                    class="form-select form-select-sm availability-select"
+                                                    data-original="{{ $current }}">
+                                                    <option value="" data-abbr="—" data-badge-class="bg-secondary"
+                                                        @selected($current === '')>—</option>
+                                                    @foreach ($legend ?? [] as $rid => $info)
+                                                        <option value="{{ $rid }}"
+                                                            data-abbr="{{ $info['abbr'] }}"
+                                                            data-badge-class="{{ $roomBadgeClass[$rid] ?? 'bg-secondary' }}"
+                                                            @selected($current === (string) $rid)>
+                                                            {{ $info['name'] }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                {{-- Badge “lettera stanza” accanto allo chevron del select --}}
+                                                <span class="room-abbr-badge badge d-none"></span>
+                                            </div>
                                         </td>
                                     @endforeach
                                 </tr>
@@ -102,12 +114,10 @@
                         </tbody>
                     </table>
                 </div>
-
-                {{-- ❌ RIMOSSA: legenda statica in fondo --}}
             </div>
 
             <div class="card-footer text-end">
-                <button class="btn btn-primary">Invia richiesta</button>
+                <button class="btn my-btn-brand-primary">Invia richiesta</button>
             </div>
         </form>
     </div>
@@ -120,10 +130,65 @@
         .cell-changed .form-select {
             background-color: #fff3cd !important;
         }
+
+        /* Badge “lettera” posizionato vicino alla freccia del select */
+        .availability-cell .room-abbr-badge {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 2.2rem;
+            /* subito a sinistra della freccia nativa */
+            font-weight: 700;
+            font-size: .75rem;
+            padding: .2rem .35rem;
+        }
+
+        /* più aria su mobile per vedere bene lettera + chevron */
+        @media (max-width: 576px) {
+            .availability-cell .form-select.form-select-sm {
+                min-height: 2.5rem;
+                padding-right: 3.25rem;
+                /* spazio per freccia + badge */
+            }
+        }
+
+        @media (min-width: 577px) {
+            .availability-cell .form-select.form-select-sm {
+                padding-right: 3.25rem;
+                /* spazio anche su desktop */
+            }
+        }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Badge lettera accanto allo chevron
+            document.querySelectorAll('.availability-cell').forEach(function(cell) {
+                const sel = cell.querySelector('.availability-select');
+                const badge = cell.querySelector('.room-abbr-badge');
+
+                function updateBadge() {
+                    const opt = sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0] :
+                        null;
+                    const abbr = opt ? (opt.getAttribute('data-abbr') || '') : '';
+                    const cls = opt ? (opt.getAttribute('data-badge-class') || 'bg-secondary') :
+                        'bg-secondary';
+
+                    if (abbr && abbr !== '—') {
+                        badge.className = 'room-abbr-badge badge ' + cls;
+                        badge.textContent = abbr;
+                        badge.classList.remove('d-none');
+                    } else {
+                        badge.className = 'room-abbr-badge badge d-none';
+                        badge.textContent = '';
+                    }
+                }
+
+                sel.addEventListener('change', updateBadge);
+                updateBadge(); // init
+            });
+
+            // Evidenzia la cella se cambia valore
             document.querySelectorAll('.availability-select').forEach(function(sel) {
                 var td = sel.closest('td');
                 var orig = sel.dataset.original || '';
