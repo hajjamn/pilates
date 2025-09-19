@@ -3,6 +3,7 @@
 use App\Http\Controllers\Client\ClientLessonController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\LessonBookingController;
 use App\Http\Controllers\LessonCalendarController;
@@ -170,9 +171,8 @@ Route::group([], function () {
         ->name('admin.')
         ->group(function () {
 
-            Route::get('/', function () {
-                return view('admin.dashboard');
-            })->name('dashboard');
+            Route::get('/', [AdminDashboardController::class, 'index'])
+                ->name('dashboard');
 
             Route::get('/disponibilita-settimanale', [AdminAvailabilityController::class, 'index'])
                 ->name('availability.index');

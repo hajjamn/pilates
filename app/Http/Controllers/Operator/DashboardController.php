@@ -16,12 +16,14 @@ class DashboardController extends Controller
         // oggi
         $today = Carbon::today();
 
-        // lezione corrente = la prima iniziata da poco e non ancora passata
+        // lezione corrente = la prima iniziata da poco e non ancora passata (finestra 2h)
         $currentLesson = Lesson::visibleTo($operator)
             ->whereDate('starts_at', $today)
-            ->whereTime('starts_at', '<=', now())
-            ->whereTime('starts_at', '>=', now()->copy()->subHours(2)) // margine, es: 2h prima
-            ->with(['room', 'clients'])
+            ->where('starts_at', '<=', now()) // iniziata
+            ->whereRaw("DATE_ADD(starts_at, INTERVAL 1 HOUR) >= ?", [now()]) // non ancora finita
+            ->where('canceled', false)
+            ->with(['room'])
+            ->withCount('clients')
             ->orderBy('starts_at')
             ->first();
 
@@ -29,15 +31,17 @@ class DashboardController extends Controller
         $futureLessons = Lesson::visibleTo($operator)
             ->whereDate('starts_at', $today)
             ->where('starts_at', '>', now())
-            ->with(['room', 'clients'])
+            ->with(['room'])
+            ->withCount('clients')
             ->orderBy('starts_at')
             ->get();
 
         // lezioni passate di oggi
         $pastLessons = Lesson::visibleTo($operator)
             ->whereDate('starts_at', $today)
-            ->where('starts_at', '<', now())
-            ->with(['room', 'clients'])
+            ->whereRaw("DATE_ADD(starts_at, INTERVAL 1 HOUR) < ?", [now()])
+            ->with(['room'])
+            ->withCount('clients')
             ->orderByDesc('starts_at')
             ->get();
 

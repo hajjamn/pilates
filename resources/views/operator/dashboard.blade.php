@@ -19,7 +19,7 @@
 
                     <div class="row">
                         <div class="col-sm-6"><strong>Sala:</strong> {{ optional($currentLesson->room)->name ?? '—' }}</div>
-                        <div class="col-sm-6"><strong>Iscritti:</strong> {{ $currentLesson->clients->count() }}</div>
+                        <div class="col-sm-6"><strong>Iscritti:</strong> {{ $currentLesson->clients_count }}</div>
                     </div>
 
                     <div class="mt-3">
@@ -43,7 +43,11 @@
                         <div>
                             {{ $lesson->starts_at->format('H:i') }} — {{ optional($lesson->room)->name ?? '—' }}
                         </div>
-                        <span class="badge bg-secondary">{{ $lesson->clients->count() }} iscritti</span>
+                        @if ($lesson->canceled)
+                            <span class="badge bg-danger">Annullata</span>
+                        @else
+                            <span class="badge bg-secondary">{{ $lesson->clients_count }} iscritti</span>
+                        @endif
                     </a>
                 @endforeach
             </div>
@@ -70,8 +74,11 @@
                                         class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                         <span>{{ $lesson->starts_at->format('H:i') }} —
                                             {{ optional($lesson->room)->name ?? '—' }}</span>
-                                        <span class="badge bg-light text-dark">{{ $lesson->clients->count() }}
-                                            iscritti</span>
+                                        @if ($lesson->canceled)
+                                            <span class="badge bg-danger">Annullata</span>
+                                        @else
+                                            <span class="badge bg-secondary">{{ $lesson->clients_count }} iscritti</span>
+                                        @endif
                                     </a>
                                 @endforeach
                             </div>
