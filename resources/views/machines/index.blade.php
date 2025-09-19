@@ -9,11 +9,6 @@
             <h1 class="h4 m-0">Macchine</h1>
         </div>
 
-        {{-- Flash success --}}
-        @if (session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
-
         {{-- Barra strumenti --}}
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
             @if (auth()->user()->hasRole('admin'))
