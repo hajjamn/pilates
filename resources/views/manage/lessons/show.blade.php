@@ -5,21 +5,34 @@
 @section('content')
     @php
         $isCanceled = (bool) $lesson->canceled;
-        $statusLabel = $isCanceled ? 'Annullata' : ($lesson->starts_at?->isPast() ? 'Conclusa' : 'Attiva');
-        $statusClass = $isCanceled
-            ? 'bg-danger-subtle text-danger fw-semibold'
-            : ($lesson->starts_at?->isPast()
-                ? 'bg-secondary-subtle text-secondary fw-semibold'
-                : 'bg-success-subtle text-success fw-semibold');
 
-        $operatorName =
-            $lesson->operator?->full_name ??
-            trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
-            $lesson->operator?->email ?? '—';
+        $now = now();
+        // durata fissa 60' come nelle dashboard; se hai un campo, sostituisci 60 con quello
+$hasStarted = $lesson->starts_at?->lte($now);
+$notEnded = $lesson->starts_at?->copy()->addMinutes(60)->gte($now);
 
-        $roomName = $lesson->room?->name ?? '—';
-        $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
+$isLive = !$isCanceled && $hasStarted && $notEnded;
+$isPast = $lesson->starts_at?->copy()->addMinutes(60)->lt($now);
+
+$statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isPast ? 'Conclusa' : 'Attiva'));
+
+$statusClass = $isCanceled
+    ? 'bg-danger-subtle text-danger fw-semibold'
+    : ($isLive
+        ? 'bg-info-subtle text-info fw-semibold'
+        : ($isPast
+            ? 'bg-secondary-subtle text-secondary fw-semibold'
+            : 'bg-success-subtle text-success fw-semibold'));
+
+$operatorName =
+    $lesson->operator?->full_name ??
+    trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
+    $lesson->operator?->email ?? '—';
+
+$roomName = $lesson->room?->name ?? '—';
+$isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
     @endphp
+
 
     <div class="container my-4 operator-lesson-show">
         <h2 class="h4 text-center mb-4">Dettaglio Lezione</h2>
@@ -163,7 +176,15 @@
                                             !auth()->user()?->hasRole('admin');
                                     @endphp
                                     <tr>
-                                        <td class="fw-semibold">{{ $fullName }}</td>
+                                        <td class="fw-semibold">
+                                            @if ($mode === 'admin')
+                                                <a href="{{ route('admin.users.show', $u) }}" class="text-decoration-none">
+                                                    {{ $fullName }}
+                                                </a>
+                                            @else
+                                                {{ $fullName }}
+                                            @endif
+                                        </td>
                                         <td class="text-center">
                                             <div class="dropdown d-inline-block" data-bs-display="static">
                                                 <button class="btn btn-link btn-sm p-0" type="button"

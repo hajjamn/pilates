@@ -377,6 +377,9 @@
 
         @if (in_array($mode, ['admin', 'operator']))
             <div class="card my-3">
+                <div class="card-header">
+                    <strong>Creazione rapida</strong>
+                </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('lessons.store') }}" class="row g-2 align-items-end">
                         @csrf

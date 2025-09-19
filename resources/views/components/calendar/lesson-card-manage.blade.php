@@ -4,20 +4,29 @@
 ])
 
 @php
-    $isCanceled = (bool) $lesson->canceled;
-    $isPast = $lesson->starts_at?->isPast();
+    $roomName = $lesson->room?->name ?? '—';
     $bookings = $lesson->lessonUsers ?? collect();
     $clientsCount = $bookings->count();
     $max = $lesson->max_clients ?? null;
 
-    $roomName = $lesson->room?->name ?? '—';
+    $isCanceled = (bool) $lesson->canceled;
 
-    $statusLabel = $isCanceled ? 'Annullata' : ($isPast ? 'Conclusa' : 'Attiva');
+    $now = now();
+    $hasStarted = $lesson->starts_at?->lte($now);
+    $notEnded = $lesson->starts_at?->copy()->addMinutes(60)->gte($now);
+
+    $isLive = !$isCanceled && $hasStarted && $notEnded;
+    $isPast = $lesson->starts_at?->copy()->addMinutes(60)->lt($now);
+
+    $statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isPast ? 'Conclusa' : 'Attiva'));
+
     $statusClass = $isCanceled
         ? 'bg-danger-subtle text-danger'
-        : ($isPast
-            ? 'bg-secondary-subtle text-secondary'
-            : 'bg-success-subtle text-success');
+        : ($isLive
+            ? 'bg-info-subtle text-info'
+            : ($isPast
+                ? 'bg-secondary-subtle text-secondary'
+                : 'bg-success-subtle text-success'));
 
     // per la riga "Giorno": es. "Lun 18 Set"
     $dayLabel = ucfirst($lesson->starts_at?->isoFormat('ddd D MMM'));

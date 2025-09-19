@@ -24,6 +24,20 @@ $accent-saffron-500: #D4A62A; // usare testo scuro
 $accent-saffron-600: #B98F23;
 $accent-saffron-700: #99781D;
 
+// --- Nuovi Accents
+$accent-coral-600: #D96B5F;
+$accent-coral-700: #BF5D53;
+$accent-coral-800: #9E4C44;
+
+$accent-teal-600: #2F7F7E;
+$accent-teal-700: #286B6A;
+$accent-teal-800: #205655;
+
+$accent-plum-600: #7B5AA6;
+$accent-plum-700: #654A88;
+$accent-plum-800: #4F3A6A;
+
+
 // --- Text helpers
 $text-on-dark: #ffffff;
 $text-on-warm: #1A1A1A;
@@ -33,6 +47,10 @@ $focus-brand: rgba(121, 140, 123, .35);
 $focus-slate: rgba(79, 109, 122, .35);
 $focus-indigo: rgba(75, 93, 154, .35);
 $focus-saffron: rgba(212, 166, 42, .35);
+
+$focus-coral: rgba(217, 107, 95, .35);
+$focus-teal: rgba(47, 127, 126, .35);
+$focus-plum: rgba(123, 90, 166, .35);
 
 // ------------------------------
 // Mappa piatta per utilità my-*
@@ -61,9 +79,22 @@ $my-colors: (
     "saffron-600": $accent-saffron-600,
     "saffron-700": $accent-saffron-700,
 
+    // coral
+    "coral-600": $accent-coral-600,
+    "coral-700": $accent-coral-700,
+    "coral-800": $accent-coral-800,
+    // teal
+    "teal-600": $accent-teal-600,
+    "teal-700": $accent-teal-700,
+    "teal-800": $accent-teal-800,
+    // plum
+    "plum-600": $accent-plum-600,
+    "plum-700": $accent-plum-700,
+    "plum-800": $accent-plum-800,
+
     // text helpers
     "text-on-dark": $text-on-dark,
-    "text-on-warm": $text-on-warm
+    "text-on-warm": $text-on-warm,
 );
 
 // (opzionale) Espongo anche come CSS variables
