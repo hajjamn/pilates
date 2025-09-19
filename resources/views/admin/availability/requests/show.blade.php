@@ -1,30 +1,19 @@
 @extends('layouts.app')
 
+@section('page-title', 'Richiesta #' . $acr->id)
+
 @section('content')
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="container py-4" style="max-width:1000px;">
+
+        {{-- Titolo + back --}}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <h1 class="h4 mb-0">Richiesta #{{ $acr->id }} — {{ $operatorName }}</h1>
-            <a href="{{ route('admin.availability.requests.index') }}" class="btn btn-outline-secondary">Torna alla lista</a>
+            <a href="{{ route('admin.availability.requests.index') }}" class="btn btn-sm btn-outline-secondary">
+                ← Torna alla lista
+            </a>
         </div>
 
         @php
-            $badgePalette = [
-                'bg-primary',
-                'bg-secondary',
-                'bg-success',
-                'bg-danger',
-                'bg-warning text-dark',
-                'bg-info text-dark',
-                'bg-dark',
-                'bg-light text-dark',
-            ];
-            $roomBadgeClass = [];
-            $i = 0;
-            foreach ($legend ?? [] as $rid => $info) {
-                $roomBadgeClass[$rid] = $badgePalette[$i % count($badgePalette)];
-                $i++;
-            }
-
             $statusIt = [
                 'added' => 'Aggiunta',
                 'removed' => 'Rimossa',
@@ -33,38 +22,31 @@
             ];
         @endphp
 
-        {{-- @if (!empty($legend))
-            <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-                @foreach ($legend as $rid => $info)
-                    <span class="badge {{ $roomBadgeClass[$rid] ?? 'bg-secondary' }}"
-                        title="{{ $info['name'] }}">{{ $info['abbr'] }}</span>
-                    <span class="me-3">{{ $info['name'] }}</span>
-                @endforeach
-            </div>
-        @endif --}}
-
+        {{-- Info principali --}}
         <div class="card mb-3">
             <div class="card-body row g-3">
                 <div class="col-md-3">
                     <div class="text-muted small">Stato</div>
                     <div class="fw-semibold">
                         @if ($acr->status === 'pending')
-                            <span class="badge bg-warning text-dark">Pending</span>
+                            <span class="badge bg-warning text-dark text-uppercase">In Attesa</span>
                         @elseif($acr->status === 'approved')
-                            <span class="badge bg-success">Approvata</span>
+                            <span class="badge bg-success text-uppercase">Approvata</span>
                         @else
-                            <span class="badge bg-danger">Respinta</span>
+                            <span class="badge bg-danger text-uppercase">Respinta</span>
                         @endif
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">Effettivo da</div>
                     <div class="fw-semibold">
-                        {{ \Carbon\Carbon::parse($acr->effective_from)->isoFormat('dddd D MMMM YYYY') }}</div>
+                        {{ \Carbon\Carbon::parse($acr->effective_from)->isoFormat('dddd D MMMM YYYY') }}
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted small">Inviata il</div>
-                    <div class="fw-semibold">{{ \Carbon\Carbon::parse($acr->created_at)->isoFormat('D MMM YYYY HH:mm') }}
+                    <div class="fw-semibold">
+                        {{ \Carbon\Carbon::parse($acr->created_at)->isoFormat('D MMM YYYY HH:mm') }}
                     </div>
                 </div>
             </div>
@@ -76,6 +58,7 @@
             </div>
         </div>
 
+        {{-- Tabelle giornaliere --}}
         @foreach (range(0, 6) as $day)
             <div class="card mb-4">
                 <div class="card-header fw-semibold">{{ $days_labels[$day] }}</div>
@@ -92,21 +75,18 @@
                             </thead>
                             <tbody>
                                 @foreach ($hours as $h)
-                                    @php
-                                        $row = $diff[$day][$h];
-                                    @endphp
-                                    <tr
-                                        class="
-                                    @if ($row['status'] === 'added') table-success
-                                    @elseif($row['status'] === 'removed') table-danger
-                                    @elseif($row['status'] === 'changed') table-warning
-                                    @else @endif
-                                ">
+                                    @php $row = $diff[$day][$h]; @endphp
+                                    <tr @class([
+                                        'table-success' => $row['status'] === 'added',
+                                        'table-danger' => $row['status'] === 'removed',
+                                        'table-warning' => $row['status'] === 'changed',
+                                    ])>
                                         <th>{{ $h }}</th>
                                         <td class="text-center">{{ $row['from'] }}</td>
                                         <td class="text-center">{{ $row['to'] }}</td>
                                         <td class="text-center text-capitalize">
-                                            {{ $statusIt[$row['status']] ?? ucfirst($row['status']) }}</td>
+                                            {{ $statusIt[$row['status']] ?? ucfirst($row['status']) }}
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -116,6 +96,7 @@
             </div>
         @endforeach
 
+        {{-- Alert --}}
         @if (session('status'))
             <div class="alert alert-success">{{ session('status') }}</div>
         @endif
@@ -123,6 +104,7 @@
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
+        {{-- Azioni (solo se pending) --}}
         @if ($acr->status === 'pending')
             <div class="card mb-4">
                 <div class="card-header fw-semibold">Azione</div>
@@ -156,5 +138,11 @@
             </div>
         @endif
 
+        {{-- Back button in fondo --}}
+        <div class="mt-3">
+            <a href="{{ route('admin.availability.requests.index') }}" class="btn btn-sm btn-outline-secondary">
+                ← Torna alla lista
+            </a>
+        </div>
     </div>
 @endsection

@@ -99,7 +99,17 @@ class AvailabilityController extends Controller
             $d = $L->starts_at->toDateString();
             $h = $L->starts_at->format('H:i');
             $r = (int) $L->room_id;
-            $occupied[$d][$h][$r][] = $L->id;
+
+            $opName = trim(($L->operator->first_name ?? '') . ' ' . ($L->operator->last_name ?? ''));
+            if ($opName === '')
+                $opName = 'Operatore #' . $L->operator_id;
+
+            // salviamo anche id e nome operatore
+            $occupied[$d][$h][$r][] = [
+                'lesson_id' => (int) $L->id,
+                'operator_id' => (int) $L->operator_id,
+                'operator_name' => $opName,
+            ];
         }
 
         $availKeySet = [];
@@ -108,14 +118,14 @@ class AvailabilityController extends Controller
             $availKeySet[$k] = true;
         }
 
-        $uncovered = [];
+        $outOfAvailability = [];
         foreach ($lessons as $L) {
             $dow = $L->starts_at->dayOfWeekIso - 1;
             $startKey = $L->starts_at->format('H:i:00');
             $k = $L->operator_id . '|' . $L->room_id . '|' . $dow . '|' . $startKey;
             if (!isset($availKeySet[$k])) {
                 $name = trim(($L->operator->first_name ?? '') . ' ' . ($L->operator->last_name ?? '')) ?: ('Operatore #' . $L->operator_id);
-                $uncovered[] = [
+                $outOfAvailability[] = [
                     'date' => $L->starts_at->toDateString(),
                     'time' => $L->starts_at->format('H:i'),
                     'room_id' => (int) $L->room_id,
@@ -123,6 +133,38 @@ class AvailabilityController extends Controller
                     'operator_name' => $name,
                     'lesson_id' => (int) $L->id,
                 ];
+            }
+        }
+
+        $lessonIndex = [];
+        foreach ($lessons as $L) {
+            $key = $L->operator_id . '|' . $L->room_id . '|' . $L->starts_at->toDateString() . '|' . $L->starts_at->format('H:i');
+            $lessonIndex[$key] = true;
+        }
+
+        $toPlan = [];
+        foreach ($slots as $slot) {
+            $dow = (int) $slot->day_of_week;
+            $hourStr = \Carbon\Carbon::createFromFormat('H:i:s', $slot->start_time)->format('H:i');
+            $room = (int) $slot->room_id;
+
+            // solo il giorno della settimana corrispondente, all'interno dell'intervallo selezionato
+            foreach ($dayDate as $dk => $dateStr) {
+                if ((int) $dk !== $dow)
+                    continue;
+
+                $key = $slot->operator_id . '|' . $room . '|' . $dateStr . '|' . $hourStr;
+                if (empty($lessonIndex[$key])) {
+                    $name = trim(($slot->operator->first_name ?? '') . ' ' . ($slot->operator->last_name ?? '')) ?: ('Operatore #' . $slot->operator_id);
+                    $toPlan[] = [
+                        'date' => $dateStr,
+                        'time' => $hourStr,
+                        'room_id' => $room,
+                        'operator_id' => (int) $slot->operator_id,
+                        'operator_name' => $name,
+                        'lesson_id' => null,
+                    ];
+                }
             }
         }
 
@@ -146,11 +188,11 @@ class AvailabilityController extends Controller
             }
         }
 
-
         $healthCounts = [
-            'uncovered' => count($uncovered),
-            'conflicts' => count($availabilityConflicts),
+            'to_plan' => count($toPlan),
+            'out_of_availability' => count($outOfAvailability),
             'occupied' => collect($occupied)->flatten(2)->count(),
+            'conflicts' => count($availabilityConflicts),
         ];
 
         return view('admin.availability.index', [
@@ -164,7 +206,8 @@ class AvailabilityController extends Controller
             'next_week' => $nextWeek,
             'day_date' => $dayDate,
             'occupied' => $occupied,
-            'uncovered' => $uncovered,
+            'to_plan' => $toPlan,
+            'out_of_availability' => $outOfAvailability,
             'availability_conflicts' => $availabilityConflicts,
             'conflict_map' => $conflictMap,
             'health_counts' => $healthCounts,
