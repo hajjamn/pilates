@@ -4,7 +4,7 @@
 @section('page-title', 'Crea nuova lezione')
 
 @section('content')
-    <div class="container" style="max-width:900px;">
+    <div class="container mt-4" style="max-width:900px;">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="h4 mb-0">Nuova lezione</h1>
             <a href="{{ route('calendar.lessons.index') }}" class="btn btn-outline-secondary btn-sm">Torna al calendario</a>
@@ -80,7 +80,7 @@
 
             <div class="card-footer d-flex justify-content-end gap-2">
                 <a href="{{ route('calendar.lessons.index') }}" class="btn btn-outline-secondary">Annulla</a>
-                <button class="btn btn-success">Crea lezione</button>
+                <button class="btn my-btn-brand-primary">Crea lezione</button>
             </div>
         </form>
     </div>

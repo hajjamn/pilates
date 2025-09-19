@@ -3,7 +3,7 @@
 @section('page-title', 'Crea lezione (operatore)')
 
 @section('content')
-    <div class="container" style="max-width:700px;">
+    <div class="container mt-4" style="max-width:700px;">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="h4 mb-0">Nuova lezione</h1>
             <a href="{{ route('calendar.lessons.index') }}" class="btn btn-outline-secondary btn-sm">Torna al calendario</a>

@@ -39,6 +39,14 @@
             </div>
             <div class="small text-muted">{{ $dayLabel }}</div>
             <div class="small fw-semibold">{{ $roomName }}</div>
+            @if ($mode === 'admin')
+                <div class="small text-muted">
+                    Operatore:
+                    {{ optional($lesson->operator)->full_name ??
+                    trim((optional($lesson->operator)->first_name ?? '') . ' ' . (optional($lesson->operator)->last_name ?? '')) ?:
+                        '—' }}
+                </div>
+            @endif
         </div>
 
         <div class="text-end">
@@ -128,3 +136,80 @@
         @endif
     </div>
 </div>
+
+@once
+    {{-- Modal conferma annullamento --}}
+    <div class="modal fade" id="cancelLessonModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Conferma annullamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sei sicuro di voler annullare questa lezione?</p>
+                    <ul class="list-unstyled small text-muted mb-0">
+                        <li><strong>Orario:</strong> <span id="clmTime"></span></li>
+                        <li><strong>Sala:</strong> <span id="clmRoom"></span></li>
+                        <li><strong>Operatore:</strong> <span id="clmOperator"></span></li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-danger" id="clmConfirmBtn">Conferma annullamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            (() => {
+                let targetForm = null;
+                let modal = null;
+                const modalEl = document.getElementById('cancelLessonModal');
+
+                // Registra SEMPRE i listener; la modale verrà creata lazy se/quando Bootstrap è disponibile
+                document.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.open-cancel-modal');
+                    if (!btn) return;
+
+                    e.preventDefault();
+                    targetForm = btn.closest('form');
+
+                    // popola i dati nella modale (o nel fallback)
+                    const time = btn.dataset.lessonTime || '';
+                    const room = btn.dataset.lessonRoom || '';
+                    const op = btn.dataset.lessonOperator || '';
+
+                    const timeEl = document.getElementById('clmTime');
+                    const roomEl = document.getElementById('clmRoom');
+                    const opEl = document.getElementById('clmOperator');
+                    if (timeEl) timeEl.textContent = time;
+                    if (roomEl) roomEl.textContent = room;
+                    if (opEl) opEl.textContent = op;
+
+                    // Crea la modale al volo se Bootstrap è disponibile
+                    if (!modal && modalEl && window.bootstrap?.Modal) {
+                        modal = new window.bootstrap.Modal(modalEl);
+                    }
+
+                    if (modal) {
+                        modal.show();
+                    } else {
+                        // Fallback senza Bootstrap
+                        if (confirm(`Annullare la lezione?\n\nOrario: ${time}\nSala: ${room}\nOperatore: ${op}`)) {
+                            targetForm?.submit();
+                        }
+                    }
+                });
+
+                // conferma dal bottone nella modale (se c'è)
+                document.getElementById('clmConfirmBtn')?.addEventListener('click', () => {
+                    targetForm?.submit();
+                });
+            })
+            ();
+        </script>
+    @endpush
+@endonce

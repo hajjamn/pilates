@@ -125,6 +125,7 @@ class LessonManageController extends Controller
             'room:id,name',
             'operator:id,first_name,last_name,email',
             'lessonUsers.user:id,first_name,last_name,email,phone',
+            'lessonUsers.userPackage.package:id,name'
         ])->loadCount('clients');
 
         $mode = $isAdmin ? 'admin' : 'operator';

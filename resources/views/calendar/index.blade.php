@@ -433,7 +433,7 @@
                         </div>
                     </form>
 
-                    @if ($mode === 'operator')
+                    @once
                         @push('scripts')
                             <script>
                                 document.addEventListener('DOMContentLoaded', () => {
@@ -466,7 +466,7 @@
                                 });
                             </script>
                         @endpush
-                    @endif
+                    @endonce
 
                 </div>
             </div>

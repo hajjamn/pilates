@@ -37,6 +37,10 @@
                     Indietro</a>
                 @if ($mode === 'operator')
                     <a href="{{ route('lessons.editLite', $lesson) }}" class="btn btn-sm my-btn-brand-primary">Modifica</a>
+                @elseif ($mode === 'admin')
+                    <a href="{{ route('lessons.edit', $lesson) }}" class="btn btn-sm my-btn-brand-primary">
+                        Modifica (admin)
+                    </a>
                 @endif
 
                 @if ($mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id)
@@ -149,9 +153,7 @@
                                             : null;
 
                                         $pkg = $b->userPackage;
-                                        $pkgLabel = $pkg?->package?->name
-                                            ? $pkg->package->name /*  . ' (rimasti: ' . $pkg->lessons_remaining . ')' */
-                                            : null;
+                                        $pkgLabel = $pkg?->package?->name ?: null;
 
                                         $paid = (bool) ($b->paid ?? false);
                                         $attended = (bool) ($b->attended ?? false);
@@ -284,7 +286,7 @@
             $isPast = $lesson->starts_at->isPast();
         @endphp
 
-        @if ($isOperatorOwner)
+        @if ($isOperatorOwner || $mode === 'admin')
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-light">
                     <strong>Aggiungi cliente</strong>
@@ -323,6 +325,19 @@
                                     <label class="form-check-label small" for="markPaid">Segna pagato</label>
                                 </div>
                             </div>
+
+                            @if ($mode === 'admin')
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label small">Pacchetto (opz.)</label>
+                                    <select class="form-select form-select-sm package-select" name="user_package_id"
+                                        disabled>
+                                        <option value="">— Nessun pacchetto —</option>
+                                    </select>
+                                    <div class="form-text small text-muted">
+                                        Si abilita dopo aver scelto il cliente.
+                                    </div>
+                                </div>
+                            @endif
 
                             <div class="col-6 col-md-3 text-end">
                                 <button class="btn btn-sm my-btn-brand-primary w-100 add-booking-btn"
@@ -607,13 +622,46 @@
                                     searchInput.value = item.name || item.email || (
                                         'Utente #' + item.id);
                                     userIdInput.value = item.id;
+
+                                    const pkgSelect = form.querySelector(
+                                        '.package-select');
+                                    if (pkgSelect) {
+                                        // Svuota e ripristina placeholder
+                                        pkgSelect.innerHTML =
+                                            '<option value="">— Nessun pacchetto —</option>';
+                                        pkgSelect.disabled = true;
+
+                                        // Aspettiamo che l’endpoint 'clients.search' includa i pacchetti in item.packages
+                                        // Ogni package: { id, name, lessons_remaining }
+                                        const pkgs = Array.isArray(item.packages) ? item
+                                            .packages : [];
+
+                                        if (pkgs.length) {
+                                            pkgs.forEach(p => {
+                                                const opt = document
+                                                    .createElement('option');
+                                                opt.value = p.id;
+                                                const pName = p.name ?? (p
+                                                    .package && p.package
+                                                    .name) ?? (
+                                                    'Pacchetto #' + p.id);
+                                                opt.textContent = p.label || p
+                                                    .name || ('Pacchetto #' + p
+                                                        .id);
+
+                                                pkgSelect.appendChild(opt);
+                                            });
+                                            pkgSelect.disabled = false;
+                                        }
+                                    }
                                     closeResults();
                                 });
                                 results.appendChild(btn);
                             });
                             results.classList.toggle('d-none', list.length === 0);
                         } catch (_) {
-                            /* ignore */ }
+                            /* ignore */
+                        }
                     });
 
                     // Chiudi lista se clicchi fuori
@@ -647,7 +695,13 @@
                             const payload = new URLSearchParams();
                             payload.set('user_id', userIdInput.value);
                             if (markPaid && markPaid.checked) payload.set('paid', '1');
-                            // NIENTE use_package per operatori
+
+                            const pkgSelect = form.querySelector('.package-select');
+                            if (pkgSelect && pkgSelect.value) {
+                                payload.set('user_package_id', pkgSelect.value);
+                                payload.set('use_package',
+                                    '1'); // <— fondamentale: attiva il consumo credito
+                            }
 
                             await fetchJSON(action, {
                                 method: 'POST',
@@ -683,6 +737,7 @@
                         });
                         if (r.ok) {
                             form.closest('tr')?.remove();
+                            window.location.reload();
                         } else {
                             alert('Errore nella rimozione');
                         }
