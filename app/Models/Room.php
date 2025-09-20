@@ -16,6 +16,10 @@ class Room extends Model
         'max_clients'
     ];
 
+    protected $casts = [
+        'max_clients' => 'integer',
+    ];
+
     public function weeklyAvailabilities()
     {
         return $this->hasMany(WeeklyAvailability::class);

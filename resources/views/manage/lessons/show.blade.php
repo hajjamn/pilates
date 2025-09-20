@@ -7,31 +7,34 @@
         $isCanceled = (bool) $lesson->canceled;
 
         $now = now();
-        // durata fissa 60' come nelle dashboard; se hai un campo, sostituisci 60 con quello
-$hasStarted = $lesson->starts_at?->lte($now);
-$notEnded = $lesson->starts_at?->copy()->addMinutes(60)->gte($now);
+        $duration = 60; // se hai un campo in DB: $lesson->duration_minutes ?? 60
+        $startsAt = $lesson->starts_at;
+        $endsAt = $lesson->starts_at?->copy()->addMinutes($duration);
 
-$isLive = !$isCanceled && $hasStarted && $notEnded;
-$isPast = $lesson->starts_at?->copy()->addMinutes(60)->lt($now);
+        $hasStarted = $startsAt?->lte($now);
+        $notEnded = $endsAt?->gte($now);
+        $isLive = !$isCanceled && $hasStarted && $notEnded;
+        $isEnded = $endsAt?->lt($now); // <-- usa questo al posto di isPast per coerenza
 
-$statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isPast ? 'Conclusa' : 'Attiva'));
+        $statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isEnded ? 'Conclusa' : 'Attiva'));
 
-$statusClass = $isCanceled
-    ? 'bg-danger-subtle text-danger fw-semibold'
-    : ($isLive
-        ? 'bg-info-subtle text-info fw-semibold'
-        : ($isPast
-            ? 'bg-secondary-subtle text-secondary fw-semibold'
-            : 'bg-success-subtle text-success fw-semibold'));
+        $statusClass = $isCanceled
+            ? 'bg-danger-subtle text-danger fw-semibold'
+            : ($isLive
+                ? 'bg-info-subtle text-info fw-semibold'
+                : ($isEnded
+                    ? 'bg-secondary-subtle text-secondary fw-semibold'
+                    : 'bg-success-subtle text-success fw-semibold'));
 
-$operatorName =
-    $lesson->operator?->full_name ??
-    trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
-    $lesson->operator?->email ?? '—';
+        $operatorName =
+            $lesson->operator?->full_name ??
+            trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
+            $lesson->operator?->email ?? '—';
 
-$roomName = $lesson->room?->name ?? '—';
-$isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
+        $roomName = $lesson->room?->name ?? '—';
+        $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
     @endphp
+
 
 
     <div class="container my-4 operator-lesson-show">
@@ -303,7 +306,6 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
         @php
             $isOperatorOwner = $mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id;
             $atCapacity = ($lesson->clients_count ?? 0) >= (int) $lesson->max_clients;
-            $isPast = $lesson->starts_at->isPast();
         @endphp
 
         @if ($isOperatorOwner || $mode === 'admin')
@@ -318,14 +320,14 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                     @elseif ($atCapacity)
                         <div class="alert alert-warning mb-3">Capienza massima raggiunta ({{ $lesson->max_clients }}).
                         </div>
-                    @elseif ($isPast)
+                    @elseif ($isEnded)
                         <div class="alert alert-secondary mb-3">
                             La lezione è già conclusa: puoi comunque aggiungere un partecipante, ti verrà chiesta conferma.
                         </div>
                     @endif
 
                     <form class="add-booking-form" data-action="{{ route('bookings.store', $lesson) }}"
-                        {{-- flag per conferma se lezione conclusa --}} {{ $isPast ? 'data-is-past=1' : '' }}>
+                        {{-- flag per conferma se lezione conclusa --}} {{ $isEnded ? 'data-is-past=1' : '' }}>
                         @csrf
                         <div class="row g-2 align-items-end">
                             <div class="col-12 col-md-6 position-relative">
