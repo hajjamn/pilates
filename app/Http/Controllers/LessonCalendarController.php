@@ -32,7 +32,10 @@ class LessonCalendarController extends Controller
         $user = Auth::user();
         $mode = $user->hasRole('admin') ? 'admin' : ($user->hasRole('operatore') ? 'operator' : 'client');
 
-        $rooms = Room::query()->orderBy('name')->get(['id', 'name']);
+        $rooms = Room::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'max_clients']);
+
         if ($roomId && !$rooms->pluck('id')->contains((int) $roomId))
             $roomId = null;
 

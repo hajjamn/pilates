@@ -7,31 +7,34 @@
         $isCanceled = (bool) $lesson->canceled;
 
         $now = now();
-        // durata fissa 60' come nelle dashboard; se hai un campo, sostituisci 60 con quello
-$hasStarted = $lesson->starts_at?->lte($now);
-$notEnded = $lesson->starts_at?->copy()->addMinutes(60)->gte($now);
+        $duration = 60; // se hai un campo in DB: $lesson->duration_minutes ?? 60
+        $startsAt = $lesson->starts_at;
+        $endsAt = $lesson->starts_at?->copy()->addMinutes($duration);
 
-$isLive = !$isCanceled && $hasStarted && $notEnded;
-$isPast = $lesson->starts_at?->copy()->addMinutes(60)->lt($now);
+        $hasStarted = $startsAt?->lte($now);
+        $notEnded = $endsAt?->gte($now);
+        $isLive = !$isCanceled && $hasStarted && $notEnded;
+        $isEnded = $endsAt?->lt($now); // <-- usa questo al posto di isPast per coerenza
 
-$statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isPast ? 'Conclusa' : 'Attiva'));
+        $statusLabel = $isCanceled ? 'Annullata' : ($isLive ? 'In corso' : ($isEnded ? 'Conclusa' : 'Attiva'));
 
-$statusClass = $isCanceled
-    ? 'bg-danger-subtle text-danger fw-semibold'
-    : ($isLive
-        ? 'bg-info-subtle text-info fw-semibold'
-        : ($isPast
-            ? 'bg-secondary-subtle text-secondary fw-semibold'
-            : 'bg-success-subtle text-success fw-semibold'));
+        $statusClass = $isCanceled
+            ? 'bg-danger-subtle text-danger fw-semibold'
+            : ($isLive
+                ? 'bg-info-subtle text-info fw-semibold'
+                : ($isEnded
+                    ? 'bg-secondary-subtle text-secondary fw-semibold'
+                    : 'bg-success-subtle text-success fw-semibold'));
 
-$operatorName =
-    $lesson->operator?->full_name ??
-    trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
-    $lesson->operator?->email ?? '—';
+        $operatorName =
+            $lesson->operator?->full_name ??
+            trim(($lesson->operator?->first_name ?? '') . ' ' . ($lesson->operator?->last_name ?? '')) ?:
+            $lesson->operator?->email ?? '—';
 
-$roomName = $lesson->room?->name ?? '—';
-$isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
+        $roomName = $lesson->room?->name ?? '—';
+        $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->hasRole('admin');
     @endphp
+
 
 
     <div class="container my-4 operator-lesson-show">
@@ -260,12 +263,10 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                                                 <button
                                                     class="btn btn-sm {{ $btnStyle }} toggle-paid {{ $paidLocked ? 'is-locked opacity-75' : '' }}"
                                                     data-url="{{ route('bookings.togglePaid', $b) }}"
-                                                    @if ($paidLocked) disabled
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title="Bloccato: pagamento tramite pacchetto" @endif
-                                                    type="button">
-
+                                                    data-paid="{{ $paid ? 1 : 0 }}"
+                                                    data-operator-id="{{ (int) $lesson->operator_id }}"
+                                                    data-admin-id="{{ (int) auth()->id() }}" type="button"
+                                                    @if ($paidLocked) disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Bloccato: pagamento tramite pacchetto" @endif>
                                                     @if ($paidLocked)
                                                         <i class="fa-solid fa-lock"></i>
                                                         <span class="visually-hidden">Pagamento bloccato (pacchetto)</span>
@@ -274,6 +275,7 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                                                     @endif
                                                 </button>
                                             </td>
+
 
                                             <td class="text-center">
                                                 <button
@@ -304,7 +306,6 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
         @php
             $isOperatorOwner = $mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id;
             $atCapacity = ($lesson->clients_count ?? 0) >= (int) $lesson->max_clients;
-            $isPast = $lesson->starts_at->isPast();
         @endphp
 
         @if ($isOperatorOwner || $mode === 'admin')
@@ -319,14 +320,14 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                     @elseif ($atCapacity)
                         <div class="alert alert-warning mb-3">Capienza massima raggiunta ({{ $lesson->max_clients }}).
                         </div>
-                    @elseif ($isPast)
+                    @elseif ($isEnded)
                         <div class="alert alert-secondary mb-3">
                             La lezione è già conclusa: puoi comunque aggiungere un partecipante, ti verrà chiesta conferma.
                         </div>
                     @endif
 
                     <form class="add-booking-form" data-action="{{ route('bookings.store', $lesson) }}"
-                        {{-- flag per conferma se lezione conclusa --}} {{ $isPast ? 'data-is-past=1' : '' }}>
+                        {{-- flag per conferma se lezione conclusa --}} {{ $isEnded ? 'data-is-past=1' : '' }}>
                         @csrf
                         <div class="row g-2 align-items-end">
                             <div class="col-12 col-md-6 position-relative">
@@ -424,6 +425,63 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
 
     @endonce
 
+    @if (auth()->user()?->hasRole('admin'))
+        @once
+            @php
+                $adminUser = auth()->user();
+                $adminDisplay =
+                    $adminUser?->full_name ??
+                    trim(($adminUser?->first_name ?? '') . ' ' . ($adminUser?->last_name ?? '')) ?:
+                    $adminUser?->email ?? 'Admin';
+            @endphp
+            <div class="modal fade" id="paidMetaModal" tabindex="-1" aria-labelledby="paidMetaLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form class="modal-content" id="paidMetaForm">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="paidMetaLabel">Dettagli pagamento</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="endpoint" id="paidEndpoint">
+                            <input type="hidden" name="paid_to_user_id" id="paidToUserId">
+
+                            {{-- Radios: visibili solo se l’operatore della lezione è diverso dall’admin --}}
+                            <div id="paidRecipientGroup" class="mb-3">
+                                <label class="form-label">Pagata a</label>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="recipient" id="paidToAdmin"
+                                            value="admin" checked>
+                                        <label class="form-check-label" for="paidToAdmin">
+                                            Amministratore ({{ $adminDisplay }})
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="recipient" id="paidToOperator"
+                                            value="operator">
+                                        <label class="form-check-label" for="paidToOperator">
+                                            Operatore della lezione
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="paidAt" class="form-label">Data/ora pagamento (opz.)</label>
+                                <input type="datetime-local" class="form-control" id="paidAt" name="paid_at"
+                                    placeholder="YYYY-MM-DDTHH:MM">
+                                <div class="form-text">Lascia vuoto per usare l’orario attuale.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Chiudi</button>
+                            <button type="submit" class="btn btn-primary">Conferma</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endonce
+    @endif
 
 
     @push('scripts')
@@ -437,31 +495,102 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': CSRF,
                             'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded',
                         },
                         credentials: 'same-origin',
                     };
                     return fetch(url, Object.assign(base, opts)).then(async r => {
+                        let data = null;
+                        try {
+                            data = await r.json();
+                        } catch (_) {}
                         if (!r.ok) {
-                            let data;
-                            try {
-                                data = await r.json();
-                            } catch (e) {}
                             const err = new Error('Request failed');
                             err.response = data || {};
                             err.status = r.status;
                             throw err;
                         }
-                        return r.json();
+                        return data;
                     });
                 }
 
                 function setToggleBtnState(btn, isOn) {
-                    // testo
                     btn.textContent = isOn ? '✓' : 'X';
-                    // classi visive
                     btn.classList.remove('btn-outline-success', 'btn-outline-danger', 'btn-success', 'btn-danger');
                     btn.classList.add(isOn ? 'btn-outline-success' : 'btn-outline-danger');
+                    btn.dataset.paid = isOn ? '1' : '0';
                 }
+
+                // --- cleanup robusto di backdrop/modal-open ---
+                function cleanupModalArtifacts() {
+                    // se non c'è nessun .modal.show, rimuovi eventuali backdrop residui e modal-open
+                    if (!document.querySelector('.modal.show')) {
+                        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.removeProperty('padding-right');
+                    }
+                }
+
+                // --- apri modal (bootstrap o fallback)
+                function openModal(el) {
+                    if (!el) return null;
+                    if (window.bootstrap && window.bootstrap.Modal) {
+                        const inst = window.bootstrap.Modal.getOrCreateInstance(el);
+                        inst.show();
+                        return inst;
+                    }
+                    // Fallback vanilla
+                    el.style.display = 'block';
+                    el.classList.add('show');
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    backdrop.dataset._manualBackdrop = '1';
+                    document.body.appendChild(backdrop);
+                    document.body.classList.add('modal-open');
+                    return {
+                        _isFallback: true,
+                        hide() {
+                            el.classList.remove('show');
+                            el.style.display = 'none';
+                            const bd = document.querySelector('.modal-backdrop[data-_manualBackdrop="1"]');
+                            bd?.remove();
+                            document.body.classList.remove('modal-open');
+                        }
+                    };
+                }
+
+                // --- chiudi modal (bootstrap/fallback) + cleanup
+                function closeModal(instance) {
+                    if (instance && typeof instance.hide === 'function') {
+                        instance.hide();
+                        setTimeout(cleanupModalArtifacts, 200);
+                    } else if (instance && instance._isFallback) {
+                        instance.hide();
+                        cleanupModalArtifacts();
+                    } else {
+                        cleanupModalArtifacts();
+                    }
+                }
+
+                // sicurezza extra quando Bootstrap chiude un modal
+                document.addEventListener('hidden.bs.modal', () => {
+                    setTimeout(cleanupModalArtifacts, 150);
+                });
+
+                const isAdmin = JSON.parse(@json($mode === 'admin'));
+
+                // Riferimenti modale admin (creati nella Blade)
+                let paidModalEl = document.getElementById('paidMetaModal');
+                let paidForm = document.getElementById('paidMetaForm');
+                let paidAtInput = document.getElementById('paidAt');
+                let paidToAdmin = document.getElementById('paidToAdmin');
+                let paidToOperator = document.getElementById('paidToOperator');
+                let paidEndpoint = document.getElementById('paidEndpoint');
+                let paidRecipientGroup = document.getElementById('paidRecipientGroup');
+
+                // istanza corrente (bootstrap o fallback)
+                let paidModalInstance = null;
+                let pendingBtn = null;
 
                 document.addEventListener('click', async (e) => {
                     const paidBtn = e.target.closest('.toggle-paid');
@@ -472,25 +601,86 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                     e.preventDefault();
 
                     const btn = paidBtn || attBtn || contBtn;
-
                     if (btn.classList.contains('is-locked') || btn.disabled) return;
 
-                    const url = btn.dataset.url;
-                    btn.disabled = true;
+                    // --- TOGGLE PAGATO ---
+                    if (paidBtn) {
+                        const endpoint = paidBtn.dataset.url;
+                        const currentlyPaid = paidBtn.dataset.paid === '1';
 
+                        // pagato -> non pagato (POST diretto)
+                        if (currentlyPaid) {
+                            try {
+                                btn.disabled = true;
+                                const res = await fetchJSON(endpoint, {
+                                    method: 'POST',
+                                    body: ''
+                                });
+                                const paid = !!res?.booking?.paid;
+                                setToggleBtnState(btn, paid);
+                            } catch (err) {
+                                alert(err.response?.message || 'Errore nell’aggiornamento pagamento');
+                            } finally {
+                                btn.disabled = false;
+                            }
+                            return;
+                        }
+
+                        // non pagato -> pagato
+                        if (!isAdmin) {
+                            // Operatore: POST diretto
+                            try {
+                                btn.disabled = true;
+                                const res = await fetchJSON(endpoint, {
+                                    method: 'POST',
+                                    body: ''
+                                });
+                                const paid = !!res?.booking?.paid;
+                                setToggleBtnState(btn, paid);
+                            } catch (err) {
+                                alert(err.response?.message || 'Errore nell’aggiornamento pagamento');
+                            } finally {
+                                btn.disabled = false;
+                            }
+                            return;
+                        }
+
+                        // Admin: apri modale
+                        pendingBtn = paidBtn;
+                        if (paidEndpoint) paidEndpoint.value = endpoint;
+                        if (paidAtInput) paidAtInput.value = '';
+
+                        const adminId = Number(paidBtn.dataset.adminId || 0);
+                        const operatorId = Number(paidBtn.dataset.operatorId || 0);
+                        const sameUser = adminId && operatorId && (adminId === operatorId);
+
+                        if (paidRecipientGroup) {
+                            if (sameUser) {
+                                paidRecipientGroup.classList.add('d-none');
+                                if (paidToAdmin) paidToAdmin.checked = true;
+                                if (paidToOperator) paidToOperator.checked = false;
+                            } else {
+                                paidRecipientGroup.classList.remove('d-none');
+                                if (paidToAdmin) paidToAdmin.checked = true;
+                                if (paidToOperator) paidToOperator.checked = false;
+                            }
+                        }
+
+                        paidModalInstance = openModal(paidModalEl);
+                        return;
+                    }
+
+                    // --- TOGGLE PRESENZA / CONTATTATO ---
                     try {
-                        const res = await fetchJSON(url, {
-                            method: 'POST'
+                        btn.disabled = true;
+                        const res = await fetchJSON(btn.dataset.url, {
+                            method: 'POST',
+                            body: ''
                         });
-
-                        if (paidBtn) {
-                            const paid = !!res?.booking?.paid;
-                            setToggleBtnState(btn, paid);
-                        } else if (attBtn) {
+                        if (attBtn) {
                             const attended = !!res?.booking?.attended;
                             setToggleBtnState(btn, attended);
                         } else if (contBtn) {
-                            // opzionale: diamo anche qui feedback verde/rosso
                             const contacted = !!res?.booking?.contacted;
                             setToggleBtnState(btn, contacted);
                         }
@@ -500,6 +690,49 @@ $isOperatorOnly = auth()->user()?->hasRole('operatore') && !auth()->user()?->has
                         btn.disabled = false;
                     }
                 });
+
+                // Submit modale (ADMIN)
+                if (isAdmin && paidForm) {
+                    paidForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        if (!pendingBtn) return;
+
+                        const endpoint = paidEndpoint?.value || pendingBtn.dataset.url;
+                        const adminId = Number(pendingBtn.dataset.adminId || 0);
+                        const operatorId = Number(pendingBtn.dataset.operatorId || 0);
+
+                        const body = new URLSearchParams();
+
+                        // destinatario
+                        let toUserId = adminId;
+                        if (paidRecipientGroup && !paidRecipientGroup.classList.contains('d-none') &&
+                            paidToOperator?.checked) {
+                            toUserId = operatorId;
+                        }
+                        if (toUserId) body.set('paid_to_user_id', String(toUserId));
+
+                        // data/ora opzionale
+                        const dt = paidAtInput?.value && paidAtInput.value.trim();
+                        if (dt) body.set('paid_at', dt);
+
+                        try {
+                            pendingBtn.disabled = true;
+                            const res = await fetchJSON(endpoint, {
+                                method: 'POST',
+                                body: body.toString()
+                            });
+                            const paid = !!res?.booking?.paid;
+                            setToggleBtnState(pendingBtn, paid);
+                            closeModal(paidModalInstance); // <<< chiusura + cleanup
+                        } catch (err) {
+                            alert(err.response?.message || 'Errore nel salvataggio pagamento');
+                        } finally {
+                            pendingBtn.disabled = false;
+                            pendingBtn = null;
+                            paidModalInstance = null;
+                        }
+                    });
+                }
             })();
         </script>
 

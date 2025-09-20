@@ -8,7 +8,6 @@ class ManagedBookingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Autorizzazione ulteriore è nel controller (ruolo + ownership).
         return $this->user()?->hasAnyRole(['operatore', 'admin']) ?? false;
     }
 
@@ -19,6 +18,11 @@ class ManagedBookingRequest extends FormRequest
             'paid' => ['nullable', 'boolean'],
             'use_package' => ['nullable', 'boolean'],
             'user_package_id' => ['nullable', 'integer', 'exists:user_packages,id'],
+
+            // 🔹 nuovi opzionali per contabilità
+            'paid_to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'paid_at' => ['nullable', 'date'],
+            'lesson_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

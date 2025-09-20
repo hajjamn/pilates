@@ -386,20 +386,20 @@
 
                         <div class="col-12 col-md-3">
                             <label class="form-label small">Sala</label>
-                            <select id="qcCreateRoom" name="room_id" class="form-select form-select-sm" required>
+                            <select id="qcCreateRoomQuick" name="room_id" class="form-select form-select-sm" required>
                                 @foreach ($rooms as $room)
                                     @php
-                                        // Usa il campo che avete sul modello Room:
-                                        // prova in quest’ordine: default_max_clients, capacity, altrimenti fallback 7
-                                        $roomDefault = $room->default_max_clients ?? ($room->capacity ?? 7);
-                                        $selected = (string) old('room_id', $roomId ?? '') === (string) $room->id;
+                                        // niente fallback: se null, lasciamo stringa vuota così lo noti
+                                        $cap = $room->max_clients;
                                     @endphp
-                                    <option value="{{ $room->id }}" data-default-max="{{ $roomDefault }}"
-                                        {{ $selected ? 'selected' : '' }}>
+                                    <option value="{{ $room->id }}"
+                                        data-max-clients="{{ $cap !== null ? (int) $cap : '' }}"
+                                        {{ (string) old('room_id', $roomId ?? '') === (string) $room->id ? 'selected' : '' }}>
                                         {{ $room->name }}
                                     </option>
                                 @endforeach
                             </select>
+
                         </div>
 
                         @if ($mode === 'admin')
@@ -427,49 +427,82 @@
 
                         <div class="col-6 col-md-2">
                             <label class="form-label small">Capienza</label>
-                            <input id="qcMaxClients" type="number" name="max_clients" min="1" max="200"
-                                class="form-control form-control-sm" required>
+                            <input id="qcMaxClientsQuick" type="number" name="max_clients" min="1"
+                                max="200" class="form-control form-control-sm" required>
                         </div>
 
                         <div class="col-6 col-md-1 text-end">
-                            <button class="btn my-btn-brand-primary btn-sm w-100">Crea</button>
+                            <button class="btn my-btn-accent-coral btn-sm w-100">Crea</button>
                         </div>
                     </form>
 
-                    @once
-                        @push('scripts')
-                            <script>
-                                document.addEventListener('DOMContentLoaded', () => {
-                                    const roomSel = document.getElementById('qcCreateRoom');
-                                    const maxInp = document.getElementById('qcMaxClients');
-                                    if (!roomSel || !maxInp) return;
+                    <script>
+                        (function() {
+                            // elementi
+                            let sel = document.getElementById('qcCreateRoomQuick');
+                            let cap = document.getElementById('qcMaxClientsQuick');
+                            if (!sel || !cap) return;
 
-                                    const getDefaultFromSelected = () => {
-                                        const opt = roomSel.selectedOptions && roomSel.selectedOptions[0] ?
-                                            roomSel.selectedOptions[0] :
-                                            roomSel.options[roomSel.selectedIndex];
-                                        const defStr = opt ? opt.getAttribute('data-default-max') : null;
-                                        const defNum = defStr ? parseInt(defStr, 10) : NaN;
-                                        return Number.isFinite(defNum) ? defNum : null;
-                                    };
+                            // legge il valore dall'option selezionata (via value -> option[value="..."])
+                            function getSelectedOption(selectEl) {
+                                const v = selectEl.value;
+                                const opt = selectEl.querySelector(
+                                    `option[value="${(window.CSS && CSS.escape) ? CSS.escape(v) : v}"]`) ||
+                                    selectEl.options[selectEl.selectedIndex];
+                                return opt || null;
+                            }
 
-                                    const applyDefault = () => {
-                                        const def = getDefaultFromSelected();
-                                        if (def !== null) {
-                                            maxInp.value = def; // imposta il valore visibile
-                                            maxInp.setAttribute('value', def); // (opz.) aggiorna anche l’attributo
-                                        }
-                                    };
+                            function parseMax(opt) {
+                                if (!opt) return NaN;
+                                const raw = opt.getAttribute('data-max-clients') || (opt.dataset ? opt.dataset.maxClients : null);
+                                const n = raw === '' || raw === null ? NaN : parseInt(raw, 10);
+                                return Number.isFinite(n) ? n : NaN;
+                            }
 
-                                    // Imposta all'avvio
-                                    applyDefault();
+                            function apply() {
+                                const opt = getSelectedOption(sel);
+                                const n = parseMax(opt);
+                                if (Number.isFinite(n)) {
+                                    cap.value = n; // imposta capienza
+                                    // se servono listener a valle, scommenta:
+                                    // cap.dispatchEvent(new Event('input', {bubbles:true}));
+                                    // cap.dispatchEvent(new Event('change', {bubbles:true}));
+                                } else {
+                                    // se la room non ha max_clients -> lascia com'è (non forziamo 7)
+                                    // opzionale: cap.placeholder = '—';
+                                }
+                            }
 
-                                    // Aggiorna ad ogni cambio sala
-                                    roomSel.addEventListener('change', applyDefault);
-                                });
-                            </script>
-                        @endpush
-                    @endonce
+                            // iniziale
+                            apply();
+
+                            // ad ogni modifica della sala
+                            sel.addEventListener('change', apply);
+                            sel.addEventListener('input', apply);
+
+                            // se un framework rimpiazza il select/input, ri-aggancia
+                            const mo = new MutationObserver(() => {
+                                const newSel = document.getElementById('qcCreateRoomQuick');
+                                const newCap = document.getElementById('qcMaxClientsQuick');
+                                if ((newSel && newSel !== sel) || (newCap && newCap !== cap)) {
+                                    sel && sel.removeEventListener('change', apply);
+                                    sel && sel.removeEventListener('input', apply);
+                                    sel = newSel || sel;
+                                    cap = newCap || cap;
+                                    if (sel && cap) {
+                                        sel.addEventListener('change', apply);
+                                        sel.addEventListener('input', apply);
+                                        apply();
+                                    }
+                                }
+                            });
+                            mo.observe(document.body, {
+                                childList: true,
+                                subtree: true
+                            });
+                        })();
+                    </script>
+
 
                 </div>
             </div>
