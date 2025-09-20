@@ -162,7 +162,10 @@ class LessonBookingController extends Controller
                 markPaid: (bool) $request->boolean('paid'),
                 usePackage: (bool) $request->boolean('use_package'),
                 userPackageId: $request->input('user_package_id'),
-                actor: $actor
+                actor: $actor,
+                paidToUserId: $request->input('paid_to_user_id'),
+                lessonPriceOverride: $request->input('lesson_price'),
+                paidAtOverride: $request->input('paid_at')
             );
         } catch (ValidationException $e) {
             if ($request->wantsJson()) {
@@ -276,14 +279,22 @@ class LessonBookingController extends Controller
             ], 403);
         }
 
-        $booking = $this->bookingService->togglePaid($booking, $actor);
+        // opzionali: override data pagamento + destinatario
+        request()->validate([
+            'paid_at' => ['nullable', 'date'],
+            'paid_to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $paidAtOverride = request()->input('paid_at');
+        $paidToUserId = request()->input('paid_to_user_id');
+
+        $booking = $this->bookingService->togglePaid($booking, $actor, $paidAtOverride, $paidToUserId);
 
         return response()->json([
             'ok' => true,
             'booking' => $booking,
         ]);
     }
-
 
     public function toggleContacted(LessonUser $booking)
     {

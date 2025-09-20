@@ -19,14 +19,18 @@ class LessonUser extends Model
         'counted',
         'lesson_id',
         'user_id',
-        'contacted'
+        'contacted',
+        'paid_at',
+        'lesson_price',
     ];
 
     protected $casts = [
         'paid' => 'boolean',
         'counted' => 'boolean',
         'is_active' => 'boolean',
-        'contacted' => 'boolean'
+        'contacted' => 'boolean',
+        'paid_at' => 'datetime',
+        'lesson_price' => 'float',
     ];
 
     public function lesson()
@@ -65,5 +69,37 @@ class LessonUser extends Model
     public function scopeForUser($q, int $userId)
     {
         return $q->where('user_id', $userId);
+    }
+
+    public function scopePaid($q)
+    {
+        return $q->whereNotNull('paid_at');
+    }
+
+    public function scopeUnpaid($q)
+    {
+        return $q->whereNull('paid_at');
+    }
+
+    public function scopeNotCovered($q)
+    {
+        // prenotazioni non coperte da pacchetto
+        return $q->whereNull('user_package_id');
+    }
+
+    public function scopeBetweenDate($q, $from, $to, $column = 'paid_at')
+    {
+        // accetta stringhe 'Y-m-d' o Carbon; usa DATE(colonna) per range giornalieri
+        return $q->whereBetween(\DB::raw("DATE($column)"), [
+            $from instanceof \Carbon\Carbon ? $from->toDateString() : (string) $from,
+            $to instanceof \Carbon\Carbon ? $to->toDateString() : (string) $to,
+        ]);
+    }
+
+    // 🔹 helper: prezzo effettivo (snapshot o default da config)
+    public function getEffectiveLessonPriceAttribute()
+    {
+        $default = (float) config('billing.lesson_price', 0.0);
+        return $this->lesson_price !== null ? (float) $this->lesson_price : $default;
     }
 }
