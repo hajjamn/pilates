@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountingController;
 use App\Http\Controllers\Client\ClientLessonController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboardController;
@@ -214,6 +215,12 @@ Route::group([], function () {
 
             Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
                 ->name('users.packages.store');
+
+            Route::get('/contabilita', [AccountingController::class, 'show'])
+                ->name('accounting.show');
+
+            Route::get('/contabilita/data', [AccountingController::class, 'data'])
+                ->name('accounting.data');
         });
 
     //------------------------------
