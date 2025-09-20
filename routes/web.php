@@ -216,10 +216,10 @@ Route::group([], function () {
             Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
                 ->name('users.packages.store');
 
-            Route::get('/contabilita', [AccountingController::class, 'show'])
+            Route::get('/punteggi', [AccountingController::class, 'show'])
                 ->name('accounting.show');
 
-            Route::get('/contabilita/data', [AccountingController::class, 'data'])
+            Route::get('/punteggi/data', [AccountingController::class, 'data'])
                 ->name('accounting.data');
         });
 

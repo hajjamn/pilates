@@ -74,6 +74,8 @@ class AccountingController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $totDaily = (float) $totLessons + (float) $totPackages;
+
         return view('admin.accounting.show', [
             'from' => $from->toDateString(),
             'to' => $to->toDateString(),
@@ -84,7 +86,9 @@ class AccountingController extends Controller
             'seriesPackages' => $seriesPackages,
             'unpaidLessons' => $unpaidLessons,
             'defaultLessonPrice' => $defaultLessonPrice,
+            'totDaily' => $totDaily, // << NEW
         ]);
+
     }
 
     /**
@@ -101,7 +105,9 @@ class AccountingController extends Controller
             ->whereNotNull('paid_at')
             ->whereBetween(DB::raw('DATE(paid_at)'), [$from->toDateString(), $to->toDateString()]);
 
-        $totLessons = (clone $lessonsBase)->selectRaw('SUM(COALESCE(lesson_price, ?)) as s', [$defaultLessonPrice])->value('s') ?? 0.0;
+        $totLessons = (clone $lessonsBase)
+            ->selectRaw('SUM(COALESCE(lesson_price, ?)) as s', [$defaultLessonPrice])
+            ->value('s') ?? 0.0;
 
         $byOperator = (clone $lessonsBase)
             ->selectRaw('paid_to_user_id, SUM(COALESCE(lesson_price, ?)) as total', [$defaultLessonPrice])
@@ -122,6 +128,7 @@ class AccountingController extends Controller
             ->orderBy('d')
             ->pluck('total', 'd');
 
+        // Pacchetti
         $packagesBase = UserPackage::query()
             ->whereBetween(DB::raw('DATE(purchased_at)'), [$from->toDateString(), $to->toDateString()])
             ->join('packages', 'user_packages.package_id', '=', 'packages.id');
@@ -133,6 +140,24 @@ class AccountingController extends Controller
             ->groupBy('d')
             ->orderBy('d')
             ->pluck('total', 'd');
+
+        // NEW: serie giornaliere per operatore (quanto è stato pagato a ciascuno per giorno)
+        $rawByOpDaily = (clone $lessonsBase)
+            ->selectRaw('DATE(paid_at) as d, paid_to_user_id, SUM(COALESCE(lesson_price, ?)) as total', [$defaultLessonPrice])
+            ->groupBy('d', 'paid_to_user_id')
+            ->with(['paidTo:id,first_name,last_name'])
+            ->orderBy('d')
+            ->get();
+
+        $seriesByOperator = [];
+        foreach ($rawByOpDaily as $row) {
+            $opId = $row->paid_to_user_id ?: 0;
+            if (!isset($seriesByOperator[$opId])) {
+                $label = $row->paidTo ? ($row->paidTo->first_name . ' ' . $row->paidTo->last_name) : '—';
+                $seriesByOperator[$opId] = ['label' => $label, 'series' => []];
+            }
+            $seriesByOperator[$opId]['series'][$row->d] = (float) $row->total;
+        }
 
         $unpaidCount = LessonUser::query()
             ->active()
@@ -151,10 +176,12 @@ class AccountingController extends Controller
             'totPackages' => (float) $totPackages,
             'seriesLessons' => $seriesLessons,
             'seriesPackages' => $seriesPackages,
-            'byOperator' => $byOperator,
+            'byOperator' => $byOperator, // lista totale periodo (resta com’era)
+            'seriesByOperator' => $seriesByOperator, // << NEW: serie giornaliere per chart
             'unpaidCount' => $unpaidCount,
         ]);
     }
+
 
     /**
      * Parsing e normalizzazione del range date.

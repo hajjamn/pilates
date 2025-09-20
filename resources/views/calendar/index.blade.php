@@ -440,36 +440,42 @@
                         @push('scripts')
                             <script>
                                 document.addEventListener('DOMContentLoaded', () => {
+                                    // === Default capienza in base alla sala (come prima) ===
                                     const roomSel = document.getElementById('qcCreateRoom');
                                     const maxInp = document.getElementById('qcMaxClients');
-                                    if (!roomSel || !maxInp) return;
+                                    if (roomSel && maxInp) {
+                                        const getDefaultFromSelected = () => {
+                                            const opt = roomSel.selectedOptions && roomSel.selectedOptions[0] ?
+                                                roomSel.selectedOptions[0] :
+                                                roomSel.options[roomSel.selectedIndex];
+                                            const defStr = opt ? opt.getAttribute('data-default-max') : null;
+                                            const defNum = defStr ? parseInt(defStr, 10) : NaN;
+                                            return Number.isFinite(defNum) ? defNum : null;
+                                        };
+                                        const applyDefault = () => {
+                                            const def = getDefaultFromSelected();
+                                            if (def !== null) {
+                                                maxInp.value = def;
+                                                maxInp.setAttribute('value', def);
+                                            }
+                                        };
+                                        applyDefault();
+                                        roomSel.addEventListener('change', applyDefault);
+                                    }
 
-                                    const getDefaultFromSelected = () => {
-                                        const opt = roomSel.selectedOptions && roomSel.selectedOptions[0] ?
-                                            roomSel.selectedOptions[0] :
-                                            roomSel.options[roomSel.selectedIndex];
-                                        const defStr = opt ? opt.getAttribute('data-default-max') : null;
-                                        const defNum = defStr ? parseInt(defStr, 10) : NaN;
-                                        return Number.isFinite(defNum) ? defNum : null;
-                                    };
-
-                                    const applyDefault = () => {
-                                        const def = getDefaultFromSelected();
-                                        if (def !== null) {
-                                            maxInp.value = def; // imposta il valore visibile
-                                            maxInp.setAttribute('value', def); // (opz.) aggiorna anche l’attributo
-                                        }
-                                    };
-
-                                    // Imposta all'avvio
-                                    applyDefault();
-
-                                    // Aggiorna ad ogni cambio sala
-                                    roomSel.addEventListener('change', applyDefault);
+                                    // === NEW: pre-seleziona SOLO il giorno sul campo datetime-local ===
+                                    const selectedDay = @json($selectedDay); // "YYYY-MM-DD" dal server
+                                    const startsInput = document.querySelector('input[name="starts_at"]');
+                                    if (startsInput && !startsInput.value && selectedDay) {
+                                        // Imposta la data al giorno selezionato, con ora 00:00 (utente poi cambia l’orario)
+                                        // NB: datetime-local richiede anche l’ora; 00:00 è il modo più neutro per “non scegliere un’ora”.
+                                        startsInput.value = `${selectedDay}T00:00`;
+                                    }
                                 });
                             </script>
                         @endpush
                     @endonce
+
 
                 </div>
             </div>
