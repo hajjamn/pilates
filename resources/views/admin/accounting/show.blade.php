@@ -54,8 +54,8 @@
                     <div class="card-body">
                         <div class="text-muted small mb-1">Totale lezioni</div>
                         <div class="fs-3 fw-semibold mb-1">Punti {{ number_format($totLessons, 2, ',', '.') }}</div>
-                        <div class="text-muted small">Default: Punti
-                            {{ number_format($defaultLessonPrice, 2, ',', '.') }}</div>
+                        <div class="text-muted small">Default: Punti {{ number_format($defaultLessonPrice, 2, ',', '.') }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -69,12 +69,25 @@
                 </div>
             </div>
 
-            {{-- NEW: Totale giornaliero (lezioni + pacchetti) --}}
+            {{-- Totale giornaliero (lezioni + pacchetti) --}}
             <div class="col-6 col-md-6 col-lg-3">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <div class="text-muted small mb-1">Totale giornaliero</div>
                         <div class="fs-3 fw-semibold">Punti {{ number_format($totDaily, 2, ',', '.') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- NEW: numero lezioni non contate nel periodo --}}
+            <div class="col-6 col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Lezioni non contate</div>
+                        <div class="fs-3 fw-semibold text-center">
+                            <span id="accUnpaidCount">{{ $unpaidLessons->count() }}</span>
+                        </div>
+                        <div class="text-muted small text-center">Nel periodo selezionato</div>
                     </div>
                 </div>
             </div>
@@ -87,7 +100,6 @@
                             @forelse($byOperator as $row)
                                 <li class="d-flex justify-content-between gap-2">
                                     <span class="text-truncate">
-                                        {{-- link alla pagina operatore --}}
                                         <a href="{{ route('admin.users.show', $row->paid_to_user_id) }}"
                                             class="text-decoration-none">
                                             {{ $row->paidTo?->first_name }} {{ $row->paidTo?->last_name }}
@@ -104,14 +116,14 @@
             </div>
         </div>
 
-
-        {{-- Grafico (mobile height compatta) --}}
+        {{-- Grafico --}}
         <div class="card mb-3 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h2 class="h6 mb-0">Incassi giornalieri</h2>
                 </div>
-                <div class="ratio" style="--bs-aspect-ratio: 50%;">
+                {{-- Altezza maggiore per dare spazio a chart + legend nativa --}}
+                <div style="height: 420px;">
                     <canvas id="accChart"></canvas>
                 </div>
             </div>
@@ -149,8 +161,7 @@
                                                 <span
                                                     class="badge bg-warning-subtle text-warning-emphasis">{{ $client }}</span>
                                             </div>
-                                            <div class="small text-muted text-truncate">
-                                                Operatore: {{ $operator }}
+                                            <div class="small text-muted text-truncate">Operatore: {{ $operator }}
                                             </div>
                                         </div>
                                     </button>
@@ -226,23 +237,32 @@
                             label: 'Lezioni (contate)',
                             data: toSeriesArray(payload.seriesLessons)
                         },
-                        {
-                            label: 'Pacchetti',
-                            data: toSeriesArray(payload.seriesPackages)
-                        },
+                        // Pacchetti: singola colonna con il totale del periodo (sull’ultima data)
+                        (() => {
+                            const arr = labels.map(() => 0);
+                            if (labels.length) arr[labels.length - 1] = parseFloat(payload.totPackages ??
+                                0);
+                            return {
+                                label: 'Pacchetti (totale periodo)',
+                                data: arr
+                            };
+                        })(),
                     ];
 
-                    // Aggiunge un dataset per ogni operatore (pagamenti giornalieri a ciascuno)
                     if (payload.seriesByOperator) {
                         Object.values(payload.seriesByOperator).forEach(op => {
                             datasets.push({
                                 label: `Operatore: ${op.label}`,
-                                data: toSeriesArray(op.series),
+                                data: toSeriesArray(op.series)
                             });
                         });
                     }
 
                     renderChart(labels, datasets);
+
+                    // aggiorna il badge lezioni non contate
+                    const unpaidBadge = document.getElementById('accUnpaidCount');
+                    if (unpaidBadge) unpaidBadge.textContent = payload.unpaidCount ?? 0;
                 })
                 .catch(console.error);
 
@@ -265,7 +285,25 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false, // <— gestiamo l’altezza via CSS (420px)
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom', // più spazio per l’elenco
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const v = ctx.parsed.y ?? 0;
+                                        return `${ctx.dataset.label}: punti ${v.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`;
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             x: {
                                 ticks: {
@@ -277,22 +315,6 @@
                                 beginAtZero: true,
                                 ticks: {
                                     callback: v => 'Punti ' + v.toLocaleString('it-IT')
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    boxWidth: 12
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => {
-                                        const v = ctx.parsed.y ?? 0;
-                                        return `${ctx.dataset.label}: punti ${v.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`;
-                                    }
                                 }
                             }
                         }
