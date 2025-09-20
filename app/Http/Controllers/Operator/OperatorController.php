@@ -56,6 +56,10 @@ class OperatorController extends Controller
             'password' => bcrypt($data['password']),
         ]);
 
+        if (!$operator->hasVerifiedEmail()) {
+            $operator->markEmailAsVerified();
+        }
+
         $operator->assignRole('operatore');
 
         return redirect()

@@ -63,7 +63,7 @@
                         <i class="fa-solid fa-door-open me-2"></i> Sale
                     </a>
                 </li>
-                <li>
+                {{-- <li>
                     <hr class="dropdown-divider d-md-none">
                 </li>
 
@@ -71,7 +71,7 @@
                     <a class="nav-link text-white" href="{{ route('admin.machines.index') }}">
                         <i class="fa-solid fa-dumbbell me-2"></i> Macchine
                     </a>
-                </li>
+                </li> --}}
                 <li>
                     <hr class="dropdown-divider d-md-none">
                 </li>

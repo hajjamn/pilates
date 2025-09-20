@@ -43,7 +43,7 @@ class WeeklyAvailabilitySeeder extends Seeder
 
             'circondatomariarita22@gmail.com' => [
                 ['days' => ['lun', 'ven'], 'times' => ['18:00', '19:00', '20:00'], 'room' => 'Sala Reformer'],
-                ['days' => ['mar', 'gio'], 'times' => ['19:00', '20:00'], 'room' => 'Sala Reformer'],
+                ['days' => ['mar', 'gio'], 'times' => ['18:00', '19:00', '20:00'], 'room' => 'Sala Reformer'],
                 ['days' => ['mer'], 'times' => ['18:00', '19:00', '20:00'], 'room' => 'Sala Chair'],
             ],
         ];
