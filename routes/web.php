@@ -216,6 +216,14 @@ Route::group([], function () {
             Route::post('/utenti/{user}/packages', [AdminUserPackageController::class, 'store'])
                 ->name('users.packages.store');
 
+            Route::get('/user-packages/{userPackage}/edit', [AdminUserPackageController::class, 'edit'])
+                ->whereNumber('userPackage')
+                ->name('user-packages.edit');
+
+            Route::patch('/user-packages/{userPackage}', [AdminUserPackageController::class, 'update'])
+                ->whereNumber('userPackage')
+                ->name('user-packages.update');
+
             Route::get('/punteggi', [AccountingController::class, 'show'])
                 ->name('accounting.show');
 
