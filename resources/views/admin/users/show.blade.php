@@ -115,6 +115,7 @@
                             <th>Pacchetto</th>
                             <th class="text-center">Rimasti</th>
                             <th class="text-nowrap">Acquistato il</th>
+                            <th class="text-end">Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -132,10 +133,14 @@
                                 <td class="text-nowrap">
                                     {{ optional($up->purchased_at)->format('d/m/Y H:i') ?? '—' }}
                                 </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                        href="{{ route('admin.user-packages.edit', $up) }}">Modifica</a>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-muted text-center p-4">Nessun pacchetto attivo.</td>
+                                <td colspan="4" class="text-muted text-center p-4">Nessun pacchetto attivo.</td>
                             </tr>
                         @endforelse
                     </tbody>

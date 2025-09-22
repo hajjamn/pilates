@@ -33,4 +33,25 @@ class UserPackageController extends Controller
 
         return back()->with('status', 'Pacchetto aggiunto a ' . $user->email);
     }
+
+    public function edit(UserPackage $userPackage)
+    {
+        // piccola pagina di edit (opzionale: puoi non usarla se fai inline-edit)
+        return view('admin.user_packages.edit', [
+            'userPackage' => $userPackage->load(['user:id,first_name,last_name,email', 'package:id,name,total_lessons']),
+        ]);
+    }
+
+    public function update(Request $request, UserPackage $userPackage)
+    {
+        $data = $request->validate([
+            'lessons_remaining' => ['required', 'integer', 'min:0', 'max:9999'],
+        ]);
+
+        $userPackage->update(['lessons_remaining' => (int) $data['lessons_remaining']]);
+
+        return redirect()
+            ->route('admin.users.show', $userPackage->user_id)
+            ->with('status', 'Lezioni rimanenti aggiornate.');
+    }
 }
