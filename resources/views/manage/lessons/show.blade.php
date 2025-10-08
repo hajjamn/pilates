@@ -79,6 +79,26 @@
                     @endif
                 @endif
 
+                @if ($mode === 'admin')
+                    @if (!$isCanceled)
+                        <form method="POST" action="{{ route('lessons.cancel', $lesson) }}"
+                            class="d-inline cancel-lesson-form">
+                            @csrf
+                            <button type="button" class="btn btn-sm btn-danger open-cancel-modal"
+                                data-lesson-id="{{ $lesson->id }}"
+                                data-lesson-time="{{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}"
+                                data-lesson-room="{{ $roomName }}" data-lesson-operator="{{ $operatorName }}">
+                                Annulla
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
+                            @csrf
+                            <button class="btn btn-sm btn-success">Ripristina</button>
+                        </form>
+                    @endif
+                @endif
+
             </div>
         </div>
 
@@ -285,12 +305,66 @@
                                                 </button>
                                             </td>
                                             <td class="text-end">
-                                                <form method="POST" action="{{ route('bookings.cancel', $b) }}"
-                                                    class="d-inline remove-booking-form">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
-                                                </form>
+                                                @if ($isEnded && $b->user_package_id && $b->counted)
+                                                    {{-- Caso A: lezione conclusa + pacchetto usato + counted => Apri modale Bootstrap --}}
+                                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#noRefundModal-{{ $b->id }}">
+                                                        Rimuovi
+                                                    </button>
+
+                                                    {{-- Modale per QUESTA prenotazione --}}
+                                                    <div class="modal fade" id="noRefundModal-{{ $b->id }}"
+                                                        tabindex="-1"
+                                                        aria-labelledby="noRefundLabel-{{ $b->id }}"
+                                                        aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title"
+                                                                        id="noRefundLabel-{{ $b->id }}">Attenzione
+                                                                    </h5>
+                                                                    <button type="button" class="btn-close"
+                                                                        data-bs-dismiss="modal"
+                                                                        aria-label="Chiudi"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <p class="mb-0">
+                                                                        <strong>ATTENZIONE:</strong> cancellando questa
+                                                                        prenotazione, dato che la lezione si è già svolta,
+                                                                        il credito nel pacchetto <strong>NON</strong> verrà
+                                                                        rimborsato.
+                                                                        Se si tratta di un errore contatta l'amministratore
+                                                                        per rimborsare manualmente il credito.
+                                                                        <br><br>
+                                                                        Vuoi comunque cancellare la prenotazione?
+                                                                    </p>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary"
+                                                                        data-bs-dismiss="modal">Annulla</button>
+                                                                    <form method="POST"
+                                                                        action="{{ route('bookings.cancel', $b) }}">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Cancella
+                                                                            comunque</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    {{-- Caso B: comportamento attuale (submit diretto, nessun modale) --}}
+                                                    <form method="POST" action="{{ route('bookings.cancel', $b) }}"
+                                                        class="d-inline remove-booking-form">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
+                                                    </form>
+                                                @endif
                                             </td>
                                         @endif
                                     </tr>
@@ -347,19 +421,6 @@
                                     <label class="form-check-label small" for="markPaid">Segna pagato</label>
                                 </div>
                             </div>
-
-                            @if ($mode === 'admin')
-                                <div class="col-12 col-md-3">
-                                    <label class="form-label small">Pacchetto (opz.)</label>
-                                    <select class="form-select form-select-sm package-select" name="user_package_id"
-                                        disabled>
-                                        <option value="">— Nessun pacchetto —</option>
-                                    </select>
-                                    <div class="form-text small text-muted">
-                                        Si abilita dopo aver scelto il cliente.
-                                    </div>
-                                </div>
-                            @endif
 
                             <div class="col-6 col-md-3 text-end">
                                 <button class="btn btn-sm my-btn-brand-primary w-100 add-booking-btn"
@@ -876,38 +937,6 @@
                                     searchInput.value = item.name || item.email || (
                                         'Utente #' + item.id);
                                     userIdInput.value = item.id;
-
-                                    const pkgSelect = form.querySelector(
-                                        '.package-select');
-                                    if (pkgSelect) {
-                                        // Svuota e ripristina placeholder
-                                        pkgSelect.innerHTML =
-                                            '<option value="">— Nessun pacchetto —</option>';
-                                        pkgSelect.disabled = true;
-
-                                        // Aspettiamo che l’endpoint 'clients.search' includa i pacchetti in item.packages
-                                        // Ogni package: { id, name, lessons_remaining }
-                                        const pkgs = Array.isArray(item.packages) ? item
-                                            .packages : [];
-
-                                        if (pkgs.length) {
-                                            pkgs.forEach(p => {
-                                                const opt = document
-                                                    .createElement('option');
-                                                opt.value = p.id;
-                                                const pName = p.name ?? (p
-                                                    .package && p.package
-                                                    .name) ?? (
-                                                    'Pacchetto #' + p.id);
-                                                opt.textContent = p.label || p
-                                                    .name || ('Pacchetto #' + p
-                                                        .id);
-
-                                                pkgSelect.appendChild(opt);
-                                            });
-                                            pkgSelect.disabled = false;
-                                        }
-                                    }
                                     closeResults();
                                 });
                                 results.appendChild(btn);
@@ -950,13 +979,6 @@
                             payload.set('user_id', userIdInput.value);
                             if (markPaid && markPaid.checked) payload.set('paid', '1');
 
-                            const pkgSelect = form.querySelector('.package-select');
-                            if (pkgSelect && pkgSelect.value) {
-                                payload.set('user_package_id', pkgSelect.value);
-                                payload.set('use_package',
-                                    '1'); // <— fondamentale: attiva il consumo credito
-                            }
-
                             await fetchJSON(action, {
                                 method: 'POST',
                                 body: payload
@@ -973,32 +995,6 @@
                     });
                 });
 
-                // --- Rimozione iscrizione (senza reload se vuoi) ---
-                document.addEventListener('submit', async (e) => {
-                    const form = e.target.closest('.remove-booking-form');
-                    if (!form) return;
-                    e.preventDefault();
-                    if (!confirm('Rimuovere questa prenotazione?')) return;
-                    try {
-                        const r = await fetch(form.action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': CSRF,
-                                'Accept': 'application/json'
-                            },
-                            body: new URLSearchParams(new FormData(form)),
-                        });
-                        if (r.ok) {
-                            form.closest('tr')?.remove();
-                            window.location.reload();
-                        } else {
-                            alert('Errore nella rimozione');
-                        }
-                    } catch (_) {
-                        alert('Errore di rete');
-                    }
-                });
             })();
         </script>
     @endpush

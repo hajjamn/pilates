@@ -137,20 +137,7 @@ $isPast = $lesson->starts_at->isPast();
 
 {{-- MODALE: Conferma iscrizione (solo se prenotabile) --}}
 @if (!$activeBooking && !$isFull && !$isCanceled && !$isPast)
-    @php
-        // Pacchetti attivi dell'utente (MVP: query qui; in futuro puoi passarli dal controller)
-$activePackages = auth()->user()
-    ? \App\Models\UserPackage::where('user_id', auth()->id())
-        ->where('lessons_remaining', '>', 0)
-        ->orderBy('purchased_at')
-        ->with('package') // per mostrare nome pacchetto
-                ->get()
-            : collect();
-
-        $hasPackages = $activePackages->isNotEmpty();
-        $singlePackage = $hasPackages && $activePackages->count() === 1 ? $activePackages->first() : null;
-    @endphp
-
+    {{-- Nessuna scelta pacchetto lato UI: il server consumerà automaticamente i crediti se disponibili --}}
     <div class="modal fade" id="bookModal-{{ $lesson->id }}" tabindex="-1"
         aria-labelledby="bookLabel-{{ $lesson->id }}" aria-hidden="true">
         <div class="modal-dialog">
@@ -169,56 +156,19 @@ $activePackages = auth()->user()
                         </p>
 
                         <div class="small text-muted mt-2">
-                            <p>
-                                Posti rimasti: {{ $seatsLeft }}
-                            </p>
+                            <p>Posti rimasti: {{ $seatsLeft }}</p>
                             <em>
-                                NB: La cancellazione è possibile solo se restano
-                                almeno
+                                NB: La cancellazione è possibile solo se restano almeno
                                 <strong>6 ore</strong> (contate tra le <strong>09:00 e le 21:00</strong>) prima
                                 dell’inizio.
                             </em>
-
                         </div>
 
-                        @if ($hasPackages)
-                            <hr>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="usePackage-{{ $lesson->id }}"
-                                    name="use_package" value="1">
-                                <label class="form-check-label" for="usePackage-{{ $lesson->id }}">
-                                    Usa una lezione da pacchetto
-                                </label>
-                            </div>
-
-                            @if ($singlePackage)
-                                {{-- Un solo pacchetto: lo selezioniamo in automatico quando la checkbox è spuntata --}}
-                                <input type="hidden" name="user_package_id" value="{{ $singlePackage->id }}"
-                                    data-bind-to="usePackageSelect-{{ $lesson->id }}">
-                                <div id="pkgInfo-{{ $lesson->id }}" class="small text-muted ms-4 mt-1"
-                                    style="display:none;">
-                                    Verrà usato: <strong>{{ $singlePackage->package?->name ?? 'Pacchetto' }}</strong>
-                                    (crediti rimasti: {{ $singlePackage->lessons_remaining }})
-                                </div>
-                            @else
-                                {{-- Più pacchetti: mostra select quando la checkbox è spuntata --}}
-                                <div id="pkgSelectWrap-{{ $lesson->id }}" class="mt-2" style="display:none;">
-                                    <label for="usePackageSelect-{{ $lesson->id }}" class="form-label small mb-1">
-                                        Seleziona pacchetto
-                                    </label>
-                                    <select class="form-select" name="user_package_id"
-                                        id="usePackageSelect-{{ $lesson->id }}">
-                                        @foreach ($activePackages as $up)
-                                            <option value="{{ $up->id }}">
-                                                {{ $up->package?->name ?? 'Pacchetto #' . $up->id }}
-                                                — crediti: {{ $up->lessons_remaining }}
-                                                — acquistato il {{ $up->purchased_at?->format('d/m/Y') }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @endif
-                        @endif
+                        <hr>
+                        <p class="small text-muted mb-0">
+                            Se hai crediti attivi in un pacchetto, all’iscrizione verrà scalato automaticamente 1
+                            credito.
+                        </p>
                     </div>
 
                     <div class="modal-footer">
@@ -229,26 +179,8 @@ $activePackages = auth()->user()
             </div>
         </div>
     </div>
-
-    @if ($hasPackages)
-        <script>
-            (function() {
-                const cb = document.getElementById('usePackage-{{ $lesson->id }}');
-                const info = document.getElementById('pkgInfo-{{ $lesson->id }}');
-                const wrap = document.getElementById('pkgSelectWrap-{{ $lesson->id }}');
-                if (!cb) return;
-                const toggle = () => {
-                    const on = cb.checked;
-                    if (info) info.style.display = on ? '' : 'none';
-                    if (wrap) wrap.style.display = on ? '' : 'none';
-                };
-                cb.addEventListener('change', toggle);
-                // default off
-                toggle();
-            })();
-        </script>
-    @endif
 @endif
+
 
 
 {{-- MODALE: Conferma disdetta (solo se $canCancel === true) --}}
