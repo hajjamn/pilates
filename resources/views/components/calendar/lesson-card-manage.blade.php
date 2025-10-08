@@ -59,6 +59,16 @@
         </div>
 
         <div class="text-end">
+            {{-- Warning: cash booking da utenti con pacchetto --}}
+            @if (in_array($mode, ['admin', 'operator']) && ($lesson->red_flag_count ?? 0) > 0)
+                <div class="mb-1">
+                    <span class="badge bg-danger align-middle" data-bs-toggle="tooltip"
+                        title="{{ $lesson->red_flag_count }} prenotazione/i senza pacchetto da utenti con pacchetto">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span class="ms-1">{{ $lesson->red_flag_count }}</span>
+                    </span>
+                </div>
+            @endif
             <div class="small text-muted">Iscritti</div>
             <div class="fw-semibold">
                 {{ $clientsCount }}@if (!is_null($max))

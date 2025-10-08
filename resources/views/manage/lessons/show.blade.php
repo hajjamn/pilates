@@ -177,6 +177,21 @@
                                     @endphp
                                     <tr>
                                         <td class="fw-semibold">
+                                            @php
+                                                // Red flag SE: prenotazione SENZA pacchetto, ma l'utente ha (almeno) un pacchetto non soft-deleted
+$hasActivePackages = $u->relationLoaded('packages')
+    ? $u->packages->isNotEmpty()
+    : $u->packages()->whereNull('deleted_at')->exists(); // fallback se mancasse eager-load (non dovrebbe)
+                                                $showRedFlag = is_null($b->user_package_id) && $hasActivePackages;
+                                            @endphp
+
+                                            @if ($showRedFlag)
+                                                <span class="badge bg-danger align-middle me-1" data-bs-toggle="tooltip"
+                                                    title="Prenotazione senza pacchetto, ma l’utente ha pacchetti">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                </span>
+                                            @endif
+
                                             @if ($mode === 'admin')
                                                 <a href="{{ route('admin.users.show', $u) }}" class="text-decoration-none">
                                                     {{ $fullName }}
@@ -185,6 +200,7 @@
                                                 {{ $fullName }}
                                             @endif
                                         </td>
+
                                         <td class="text-center">
                                             <div class="dropdown d-inline-block" data-bs-display="static">
                                                 <button class="btn btn-link btn-sm p-0" type="button"
@@ -247,7 +263,7 @@
                                                 @if ($hasPackage)
                                                     {{-- Caso con pacchetto: mostra solo il badge, NESSUN toggle --}}
                                                     @if ($isOperatorOnly)
-                                                        <span class="badge text-bg-light">Paccheto</span>
+                                                        <span class="badge text-bg-light">Pacchetto</span>
                                                     @else
                                                         @if ($pkgLabel)
                                                             <span class="badge text-bg-light">{{ $pkgLabel }}</span>
