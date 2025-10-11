@@ -124,8 +124,13 @@ class LessonManageController extends Controller
         $lesson->load([
             'room:id,name',
             'operator:id,first_name,last_name,email',
-            'lessonUsers.user:id,first_name,last_name,email,phone',
-            'lessonUsers.userPackage.package:id,name'
+            'lessonUsers' => fn($q) => $q->active()->with([
+                'user:id,first_name,last_name,email,phone',
+                // pacchetti dell'utente NON soft-deleted (bastano id,user_id)
+                'user.packages' => fn($qq) => $qq->whereNull('deleted_at')->select('id', 'user_id'),
+                'userPackage:id,package_id',
+                'userPackage.package:id,name',
+            ]),
         ])->loadCount('clients');
 
         $mode = $isAdmin ? 'admin' : 'operator';

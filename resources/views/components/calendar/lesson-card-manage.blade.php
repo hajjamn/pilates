@@ -59,6 +59,16 @@
         </div>
 
         <div class="text-end">
+            {{-- Warning: cash booking da utenti con pacchetto --}}
+            @if (in_array($mode, ['admin', 'operator']) && ($lesson->red_flag_count ?? 0) > 0)
+                <div class="mb-1">
+                    <span class="badge bg-danger align-middle" data-bs-toggle="tooltip"
+                        title="{{ $lesson->red_flag_count }} prenotazione/i senza pacchetto da utenti con pacchetto">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span class="ms-1">{{ $lesson->red_flag_count }}</span>
+                    </span>
+                </div>
+            @endif
             <div class="small text-muted">Iscritti</div>
             <div class="fw-semibold">
                 {{ $clientsCount }}@if (!is_null($max))
@@ -123,17 +133,18 @@
 
                         {{-- Mini recap stretta: Pacchetto / Pagato / Presenza --}}
                         <span class="d-inline-flex align-items-center gap-1">
-                            {{-- Pacchetto: solo indicatore "usato" (gli operatori non vedono i nomi) --}}
-                            @if ($usedPackage)
-                                <span class="badge rounded-pill text-bg-light" title="Pacchetto usato">Pkg</span>
-                            @else
-                                <span class="badge rounded-pill text-bg-light text-muted"
-                                    title="Nessun pacchetto">—</span>
-                            @endif
+                            @php $hasPackage = (bool) $b->user_package_id; @endphp
 
-                            {{-- Pagato --}}
-                            <span class="badge rounded-pill {{ $paid ? 'text-bg-success' : 'text-bg-danger' }}"
-                                title="Pagato">{{ $paid ? '€' : '€' }}</span>
+                            @if ($hasPackage)
+                                {{-- Pacchetto usato: icona box con colore verde "pagato" --}}
+                                <span class="badge rounded-pill text-bg-success" title="Pacchetto usato">
+                                    <i class="fa-solid fa-box-open"></i>
+                                </span>
+                            @else
+                                {{-- Nessun pacchetto: mostra SOLO lo stato di pagamento --}}
+                                <span class="badge rounded-pill {{ $paid ? 'text-bg-success' : 'text-bg-danger' }}"
+                                    title="Pagato">{{ $paid ? '€' : '€' }}</span>
+                            @endif
 
                             {{-- Presenza --}}
                             <span class="badge rounded-pill {{ $attended ? 'text-bg-success' : 'text-bg-secondary' }}"

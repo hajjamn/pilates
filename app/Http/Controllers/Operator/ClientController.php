@@ -26,7 +26,8 @@ class ClientController extends Controller
         ]);
 
         // Password temporanea (poi potremo inviare "imposta password" via email)
-        $tempPassword = Str::random(16);
+        //$tempPassword = Str::random(16);
+        $tempPassword = '1234';
 
         $user = User::create([
             'first_name' => $data['first_name'],

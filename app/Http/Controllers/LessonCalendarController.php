@@ -87,6 +87,7 @@ class LessonCalendarController extends Controller
                 'room:id,name',
                 'operator:id,first_name,last_name,email',
             ]);
+            $lessonsQuery->withCount(['cashBookingsByPackOwners as red_flag_count']);
         } else {
             $lessonsQuery->with(['room', 'operator']);
         }

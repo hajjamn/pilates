@@ -19,7 +19,17 @@
 
                     <div class="row">
                         <div class="col-sm-6"><strong>Sala:</strong> {{ optional($currentLesson->room)->name ?? '—' }}</div>
-                        <div class="col-sm-6"><strong>Iscritti:</strong> {{ $currentLesson->clients_count }}</div>
+                        <div class="col-sm-6 d-flex align-items-center justify-content-sm-end">
+                            <strong class="me-1">Iscritti:</strong>
+                            <span class="badge bg-secondary">{{ $currentLesson->clients_count }}</span>
+                            @if (($currentLesson->red_flag_count ?? 0) > 0)
+                                <span class="badge bg-danger ms-2" data-bs-toggle="tooltip"
+                                    title="{{ $currentLesson->red_flag_count }} prenotazione/i senza pacchetto da utenti con pacchetto">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </span>
+                            @endif
+                        </div>
+
                     </div>
 
                     <div class="mt-3">
@@ -46,7 +56,15 @@
                         @if ($lesson->canceled)
                             <span class="badge bg-danger">Annullata</span>
                         @else
-                            <span class="badge bg-secondary">{{ $lesson->clients_count }} iscritti</span>
+                            <span class="d-inline-flex align-items-center">
+                                <span class="badge bg-secondary">{{ $lesson->clients_count }} iscritti</span>
+                                @if (($lesson->red_flag_count ?? 0) > 0)
+                                    <span class="badge bg-danger ms-2" data-bs-toggle="tooltip"
+                                        title="{{ $lesson->red_flag_count }} prenotazione/i senza pacchetto da utenti con pacchetto">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </span>
+                                @endif
+                            </span>
                         @endif
                     </a>
                 @endforeach
@@ -77,7 +95,16 @@
                                         @if ($lesson->canceled)
                                             <span class="badge bg-danger">Annullata</span>
                                         @else
-                                            <span class="badge bg-secondary">{{ $lesson->clients_count }} iscritti</span>
+                                            <span class="d-inline-flex align-items-center">
+                                                <span class="badge bg-secondary">{{ $lesson->clients_count }}
+                                                    iscritti</span>
+                                                @if (($lesson->red_flag_count ?? 0) > 0)
+                                                    <span class="badge bg-danger ms-2" data-bs-toggle="tooltip"
+                                                        title="{{ $lesson->red_flag_count }} prenotazione/i senza pacchetto da utenti con pacchetto">
+                                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    </span>
+                                                @endif
+                                            </span>
                                         @endif
                                     </a>
                                 @endforeach

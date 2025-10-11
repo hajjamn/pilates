@@ -59,25 +59,23 @@
                     </a>
                 @endif
 
-                @if ($mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id)
-                    @if (!$isCanceled)
-                        <form method="POST" action="{{ route('lessons.cancel', $lesson) }}"
-                            class="d-inline cancel-lesson-form">
-                            @csrf
-                            <button type="button" class="btn btn-sm btn-danger open-cancel-modal"
-                                data-lesson-id="{{ $lesson->id }}"
-                                data-lesson-time="{{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}"
-                                data-lesson-room="{{ $roomName }}" data-lesson-operator="{{ $operatorName }}">
-                                Annulla
-                            </button>
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
-                            @csrf
-                            <button class="btn btn-sm btn-success">Ripristina</button>
-                        </form>
-                    @endif
+                @if (!$isCanceled && (($mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id) || $mode === 'admin'))
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#lessonCancelModal">
+                        Annulla
+                    </button>
+                @elseif ($mode === 'operator' && (int) auth()->id() === (int) $lesson->operator_id)
+                    <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
+                        @csrf
+                        <button class="btn btn-sm btn-success">Ripristina</button>
+                    </form>
+                @elseif ($mode === 'admin')
+                    <form method="POST" action="{{ route('lessons.uncancel', $lesson) }}" class="d-inline">
+                        @csrf
+                        <button class="btn btn-sm btn-success">Ripristina</button>
+                    </form>
                 @endif
+
 
             </div>
         </div>
@@ -120,7 +118,7 @@
                 @else
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
-                            <thead class="small text-muted">
+                            <thead class="small text-muted text-center">
                                 @if ($isCanceled)
                                     <tr>
                                         <th>Cliente</th>
@@ -131,8 +129,7 @@
                                     <tr>
                                         <th>Cliente</th>
                                         <th>Contatti</th>
-                                        <th>Pacchetto</th>
-                                        <th>Pagato</th>
+                                        <th>Pagamento</th>
                                         <th>Presenza</th>
                                         <th class="text-end">Azioni</th>
                                     </tr>
@@ -180,6 +177,21 @@
                                     @endphp
                                     <tr>
                                         <td class="fw-semibold">
+                                            @php
+                                                // Red flag SE: prenotazione SENZA pacchetto, ma l'utente ha (almeno) un pacchetto non soft-deleted
+$hasActivePackages = $u->relationLoaded('packages')
+    ? $u->packages->isNotEmpty()
+    : $u->packages()->whereNull('deleted_at')->exists(); // fallback se mancasse eager-load (non dovrebbe)
+                                                $showRedFlag = is_null($b->user_package_id) && $hasActivePackages;
+                                            @endphp
+
+                                            @if ($showRedFlag)
+                                                <span class="badge bg-danger align-middle me-1" data-bs-toggle="tooltip"
+                                                    title="Prenotazione senza pacchetto, ma l’utente ha pacchetti">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                </span>
+                                            @endif
+
                                             @if ($mode === 'admin')
                                                 <a href="{{ route('admin.users.show', $u) }}" class="text-decoration-none">
                                                     {{ $fullName }}
@@ -188,6 +200,7 @@
                                                 {{ $fullName }}
                                             @endif
                                         </td>
+
                                         <td class="text-center">
                                             <div class="dropdown d-inline-block" data-bs-display="static">
                                                 <button class="btn btn-link btn-sm p-0" type="button"
@@ -242,40 +255,34 @@
                                             </td>
                                         @else
                                             {{-- Vista normale: Pacchetto + Pagato + Presenza con toggle --}}
-                                            <td class="small text-center">
-                                                @if ($isOperatorOnly)
-                                                    @if ($b->user_package_id)
-                                                        <span class="badge text-bg-light">Usato</span>
+                                            <td class="text-center">
+                                                @php
+                                                    $hasPackage = $b->user_package_id !== null;
+                                                @endphp
+
+                                                @if ($hasPackage)
+                                                    {{-- Caso con pacchetto: mostra solo il badge, NESSUN toggle --}}
+                                                    @if ($isOperatorOnly)
+                                                        <span class="badge text-bg-light">Pacchetto</span>
                                                     @else
-                                                        <span class="text-muted">—</span>
+                                                        @if ($pkgLabel)
+                                                            <span class="badge text-bg-light">{{ $pkgLabel }}</span>
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
                                                     @endif
                                                 @else
-                                                    @if ($pkgLabel)
-                                                        <span class="badge text-bg-light">{{ $pkgLabel }}</span>
-                                                    @else
-                                                        <span class="text-muted">—</span>
-                                                    @endif
+                                                    {{-- Caso senza pacchetto: mostra il toggle "Pagato" come prima --}}
+                                                    @php $btnStyle = $paid ? 'btn-outline-success' : 'btn-outline-danger'; @endphp
+                                                    <button class="btn btn-sm {{ $btnStyle }} toggle-paid"
+                                                        data-url="{{ route('bookings.togglePaid', $b) }}"
+                                                        data-paid="{{ $paid ? 1 : 0 }}"
+                                                        data-operator-id="{{ (int) $lesson->operator_id }}"
+                                                        data-admin-id="{{ (int) auth()->id() }}" type="button">
+                                                        {{ $paid ? '✓' : 'X' }}
+                                                    </button>
                                                 @endif
                                             </td>
-                                            <td class="text-center">
-                                                @php $btnStyle = $paid ? 'btn-outline-success' : 'btn-outline-danger'; @endphp
-
-                                                <button
-                                                    class="btn btn-sm {{ $btnStyle }} toggle-paid {{ $paidLocked ? 'is-locked opacity-75' : '' }}"
-                                                    data-url="{{ route('bookings.togglePaid', $b) }}"
-                                                    data-paid="{{ $paid ? 1 : 0 }}"
-                                                    data-operator-id="{{ (int) $lesson->operator_id }}"
-                                                    data-admin-id="{{ (int) auth()->id() }}" type="button"
-                                                    @if ($paidLocked) disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Bloccato: pagamento tramite pacchetto" @endif>
-                                                    @if ($paidLocked)
-                                                        <i class="fa-solid fa-lock"></i>
-                                                        <span class="visually-hidden">Pagamento bloccato (pacchetto)</span>
-                                                    @else
-                                                        {{ $paid ? '✓' : 'X' }}
-                                                    @endif
-                                                </button>
-                                            </td>
-
 
                                             <td class="text-center">
                                                 <button
@@ -285,12 +292,66 @@
                                                 </button>
                                             </td>
                                             <td class="text-end">
-                                                <form method="POST" action="{{ route('bookings.cancel', $b) }}"
-                                                    class="d-inline remove-booking-form">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
-                                                </form>
+                                                @if ($isEnded && $b->user_package_id && $b->counted)
+                                                    {{-- Caso A: lezione conclusa + pacchetto usato + counted => Apri modale Bootstrap --}}
+                                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#noRefundModal-{{ $b->id }}">
+                                                        Rimuovi
+                                                    </button>
+
+                                                    {{-- Modale per QUESTA prenotazione --}}
+                                                    <div class="modal fade text-start"
+                                                        id="noRefundModal-{{ $b->id }}" tabindex="-1"
+                                                        aria-labelledby="noRefundLabel-{{ $b->id }}"
+                                                        aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title"
+                                                                        id="noRefundLabel-{{ $b->id }}">Attenzione
+                                                                    </h5>
+                                                                    <button type="button" class="btn-close"
+                                                                        data-bs-dismiss="modal"
+                                                                        aria-label="Chiudi"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <p class="mb-0">
+                                                                        <strong>ATTENZIONE:</strong> cancellando questa
+                                                                        prenotazione, dato che la lezione si è già svolta,
+                                                                        il credito nel pacchetto <strong>NON</strong> verrà
+                                                                        rimborsato.
+                                                                        Se si tratta di un errore contatta l'amministratore
+                                                                        per rimborsare manualmente il credito.
+                                                                        <br><br>
+                                                                        Vuoi comunque cancellare la prenotazione?
+                                                                    </p>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary"
+                                                                        data-bs-dismiss="modal">Annulla</button>
+                                                                    <form method="POST"
+                                                                        action="{{ route('bookings.cancel', $b) }}">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Cancella
+                                                                            comunque</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    {{-- Caso B: comportamento attuale (submit diretto, nessun modale) --}}
+                                                    <form method="POST" action="{{ route('bookings.cancel', $b) }}"
+                                                        class="d-inline remove-booking-form">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="btn btn-outline-danger btn-sm">Rimuovi</button>
+                                                    </form>
+                                                @endif
                                             </td>
                                         @endif
                                     </tr>
@@ -326,8 +387,8 @@
                         </div>
                     @endif
 
-                    <form class="add-booking-form" data-action="{{ route('bookings.store', $lesson) }}"
-                        {{-- flag per conferma se lezione conclusa --}} {{ $isEnded ? 'data-is-past=1' : '' }}>
+                    <form id="addBookingForm-{{ $lesson->id }}" class="add-booking-form" method="POST"
+                        action="{{ route('bookings.store', $lesson) }}">
                         @csrf
                         <div class="row g-2 align-items-end">
                             <div class="col-12 col-md-6 position-relative">
@@ -348,25 +409,19 @@
                                 </div>
                             </div>
 
-                            @if ($mode === 'admin')
-                                <div class="col-12 col-md-3">
-                                    <label class="form-label small">Pacchetto (opz.)</label>
-                                    <select class="form-select form-select-sm package-select" name="user_package_id"
-                                        disabled>
-                                        <option value="">— Nessun pacchetto —</option>
-                                    </select>
-                                    <div class="form-text small text-muted">
-                                        Si abilita dopo aver scelto il cliente.
-                                    </div>
-                                </div>
-                            @endif
-
                             <div class="col-6 col-md-3 text-end">
-                                <button class="btn btn-sm my-btn-brand-primary w-100 add-booking-btn"
-                                    {{ $isCanceled || $atCapacity ? 'disabled' : '' }}>
-                                    Aggiungi
-                                </button>
+                                @if ($isEnded)
+                                    <button type="button" class="btn btn-sm my-btn-brand-primary w-100"
+                                        data-bs-toggle="modal" data-bs-target="#addPastConfirmModal">
+                                        Aggiungi
+                                    </button>
+                                @else
+                                    <button type="submit" class="btn btn-sm my-btn-brand-primary w-100 add-booking-btn">
+                                        Aggiungi
+                                    </button>
+                                @endif
                             </div>
+
                         </div>
 
                         {{-- NB: per gli operatori niente pacchetti --}}
@@ -390,18 +445,22 @@
                     <div class="modal-body">
                         <p>Sei sicuro di voler annullare questa lezione?</p>
                         <ul class="list-unstyled small text-muted mb-0">
-                            <li><strong>Quando:</strong> <span id="cancel-lesson-time">—</span></li>
-                            <li><strong>Sala:</strong> <span id="cancel-lesson-room">—</span></li>
-                            <li><strong>Operatore:</strong> <span id="cancel-lesson-operator">—</span></li>
+                            <li><strong>Quando:</strong> {{ $lesson->starts_at?->translatedFormat('H:i — d MMM') }}</li>
+                            <li><strong>Sala:</strong> {{ $roomName }}</li>
+                            <li><strong>Operatore:</strong> {{ $operatorName }}</li>
                         </ul>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Chiudi</button>
-                        <button type="button" class="btn btn-danger" id="confirmLessonCancelBtn">Annulla lezione</button>
+                        <form method="POST" action="{{ route('lessons.cancel', $lesson) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-danger">Annulla lezione</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+
 
         {{-- Modale aggiunta cliente a lezione terminata --}}
         <div class="modal fade" id="addPastConfirmModal" tabindex="-1" aria-labelledby="addPastConfirmModalLabel"
@@ -417,8 +476,12 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
-                        <button type="button" class="btn btn-danger" id="confirmAddPastBtn">Aggiungi comunque</button>
+                        <button type="submit" class="btn btn-danger" form="addBookingForm-{{ $lesson->id }}">
+                            Aggiungi comunque
+                        </button>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -736,46 +799,6 @@
             })();
         </script>
 
-
-        <script>
-            (function() {
-                let currentCancelForm = null;
-
-                const cancelModalEl = document.getElementById('lessonCancelModal');
-                const cancelModal = cancelModalEl && (window.bootstrap ?
-                    new window.bootstrap.Modal(cancelModalEl) :
-                    null);
-
-                document.addEventListener('click', (e) => {
-                    const btn = e.target.closest('.open-cancel-modal');
-                    if (!btn) return;
-
-                    e.preventDefault();
-                    currentCancelForm = btn.closest('form');
-
-                    // Riempie i dettagli nella modale
-                    const tEl = document.getElementById('cancel-lesson-time');
-                    const rEl = document.getElementById('cancel-lesson-room');
-                    const oEl = document.getElementById('cancel-lesson-operator');
-                    if (tEl) tEl.textContent = btn.dataset.lessonTime || '—';
-                    if (rEl) rEl.textContent = btn.dataset.lessonRoom || '—';
-                    if (oEl) oEl.textContent = btn.dataset.lessonOperator || '—';
-
-                    if (cancelModal) {
-                        cancelModal.show();
-                    } else if (confirm('Annullare questa lezione?')) {
-                        currentCancelForm?.submit();
-                    }
-                });
-
-                document.getElementById('confirmLessonCancelBtn')?.addEventListener('click', () => {
-                    if (currentCancelForm) {
-                        currentCancelForm.submit();
-                    }
-                });
-            })();
-        </script>
-
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 if (window.bootstrap) {
@@ -811,28 +834,13 @@
                     return r.json();
                 }
 
-                // --- Conferma aggiunta se lezione conclusa ---
-                let pendingPastForm = null;
-                const pastModalEl = document.getElementById('addPastConfirmModal');
-                const pastModal = pastModalEl && (window.bootstrap ? new bootstrap.Modal(pastModalEl) : null);
-
-                document.getElementById('confirmAddPastBtn')?.addEventListener('click', () => {
-                    if (pendingPastForm) {
-                        pendingPastForm.dataset.confirmed = '1';
-                        pastModal?.hide();
-                        pendingPastForm.requestSubmit(); // rilancia submit ora confermato
-                        pendingPastForm = null;
-                    }
-                });
 
                 // --- Autocomplete + add booking (solo se esiste il form) ---
                 document.querySelectorAll('.add-booking-form').forEach(form => {
-                    const action = form.dataset.action;
                     const searchInput = form.querySelector('.client-search');
                     const results = form.querySelector('.client-results');
                     const userIdInput = form.querySelector('.client-id');
                     const markPaid = form.querySelector('.mark-paid');
-                    const addBtn = form.querySelector('.add-booking-btn');
 
                     if (!searchInput) return;
 
@@ -876,38 +884,6 @@
                                     searchInput.value = item.name || item.email || (
                                         'Utente #' + item.id);
                                     userIdInput.value = item.id;
-
-                                    const pkgSelect = form.querySelector(
-                                        '.package-select');
-                                    if (pkgSelect) {
-                                        // Svuota e ripristina placeholder
-                                        pkgSelect.innerHTML =
-                                            '<option value="">— Nessun pacchetto —</option>';
-                                        pkgSelect.disabled = true;
-
-                                        // Aspettiamo che l’endpoint 'clients.search' includa i pacchetti in item.packages
-                                        // Ogni package: { id, name, lessons_remaining }
-                                        const pkgs = Array.isArray(item.packages) ? item
-                                            .packages : [];
-
-                                        if (pkgs.length) {
-                                            pkgs.forEach(p => {
-                                                const opt = document
-                                                    .createElement('option');
-                                                opt.value = p.id;
-                                                const pName = p.name ?? (p
-                                                    .package && p.package
-                                                    .name) ?? (
-                                                    'Pacchetto #' + p.id);
-                                                opt.textContent = p.label || p
-                                                    .name || ('Pacchetto #' + p
-                                                        .id);
-
-                                                pkgSelect.appendChild(opt);
-                                            });
-                                            pkgSelect.disabled = false;
-                                        }
-                                    }
                                     closeResults();
                                 });
                                 results.appendChild(btn);
@@ -923,82 +899,8 @@
                         if (!results.contains(ev.target) && ev.target !== searchInput) closeResults();
                     });
 
-                    // Submit "Aggiungi"
-                    form.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-
-                        // Se la lezione è conclusa, chiedi conferma (una sola volta)
-                        if (form.dataset.isPast === '1' && !form.dataset.confirmed) {
-                            if (pastModal) {
-                                pendingPastForm = form;
-                                pastModal.show();
-                                return; // attendo conferma modale
-                            }
-                            // fallback senza Bootstrap
-                            if (!confirm('La lezione è già conclusa. Aggiungere comunque?')) return;
-                            form.dataset.confirmed = '1';
-                        }
-
-                        if (!userIdInput.value) {
-                            alert('Seleziona un cliente dall’elenco.');
-                            return;
-                        }
-
-                        addBtn.disabled = true;
-                        try {
-                            const payload = new URLSearchParams();
-                            payload.set('user_id', userIdInput.value);
-                            if (markPaid && markPaid.checked) payload.set('paid', '1');
-
-                            const pkgSelect = form.querySelector('.package-select');
-                            if (pkgSelect && pkgSelect.value) {
-                                payload.set('user_package_id', pkgSelect.value);
-                                payload.set('use_package',
-                                    '1'); // <— fondamentale: attiva il consumo credito
-                            }
-
-                            await fetchJSON(action, {
-                                method: 'POST',
-                                body: payload
-                            });
-                            window.location.reload(); // semplice e robusto
-                        } catch (err) {
-                            const errors = err.response?.errors;
-                            const first = errors ? Object.values(errors)[0][0] : (err.response
-                                ?.message || 'Errore');
-                            alert(first);
-                        } finally {
-                            addBtn.disabled = false;
-                        }
-                    });
                 });
 
-                // --- Rimozione iscrizione (senza reload se vuoi) ---
-                document.addEventListener('submit', async (e) => {
-                    const form = e.target.closest('.remove-booking-form');
-                    if (!form) return;
-                    e.preventDefault();
-                    if (!confirm('Rimuovere questa prenotazione?')) return;
-                    try {
-                        const r = await fetch(form.action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': CSRF,
-                                'Accept': 'application/json'
-                            },
-                            body: new URLSearchParams(new FormData(form)),
-                        });
-                        if (r.ok) {
-                            form.closest('tr')?.remove();
-                            window.location.reload();
-                        } else {
-                            alert('Errore nella rimozione');
-                        }
-                    } catch (_) {
-                        alert('Errore di rete');
-                    }
-                });
             })();
         </script>
     @endpush

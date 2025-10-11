@@ -51,6 +51,17 @@ class Lesson extends Model
             ->wherePivotNull('deleted_at');
     }
 
+    public function cashBookingsByPackOwners()
+    {
+        return $this->hasMany(\App\Models\LessonUser::class)
+            ->whereNull('deleted_at')           // booking attiva
+            ->whereNull('user_package_id')      // non coperta da pacchetto
+            ->whereHas('user', function ($q) {
+                // l'hasMany User->packages usa SoftDeletes: esclude già i soft-deleted
+                $q->whereHas('packages');
+            });
+    }
+
     public function scopePast($query)
     {
         return $query->where('starts_at', '<=', now());

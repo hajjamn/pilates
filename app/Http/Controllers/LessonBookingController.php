@@ -26,6 +26,7 @@ class LessonBookingController extends Controller
         $actor = Auth::user();
         $isAdmin = $actor->hasRole('admin');
         $isOperator = $actor->hasRole('operatore');
+        $isClient = $actor->hasRole('cliente');
 
         if ($lesson->canceled) {
             return back()->withErrors('Lezione annullata.');
@@ -34,11 +35,9 @@ class LessonBookingController extends Controller
             return back()->withErrors('La lezione è già iniziata o passata.');
         }
 
-        $targetUserId = $actor->hasRole('cliente')
-            ? $actor->id
-            : $request->input('user_id', $actor->id);
+        $targetUserId = $isClient ? $actor->id : $request->input('user_id', $actor->id);
 
-        // Validazione minima
+        // Validazione minima (i campi use_package / user_package_id restano opzionali per operatori/admin)
         $request->merge(['user_id' => $targetUserId]);
         $request->validate([
             'user_id' => ['required', 'exists:users,id'],
@@ -58,10 +57,13 @@ class LessonBookingController extends Controller
             }
         }
 
-        $usePackage = (bool) $request->boolean('use_package');
+        // 👉 Forziamo l’uso automatico del pacchetto SOLO quando l’attore è un cliente
+        //    (operatori/admin mantengono il comportamento da form)
+        $forceAutoPackage = $isClient;
+        $usePackage = $forceAutoPackage ? true : (bool) $request->boolean('use_package');
 
         try {
-            DB::transaction(function () use ($lesson, $actor, $targetUserId, $usePackage, $request) {
+            DB::transaction(function () use ($lesson, $actor, $targetUserId, $forceAutoPackage, $usePackage, $request) {
                 // 1) Lock lezione per serializzare capienza
                 $lockedLesson = Lesson::whereKey($lesson->id)->lockForUpdate()->first();
 
@@ -82,13 +84,13 @@ class LessonBookingController extends Controller
                     abort(422, 'La lezione è al completo.');
                 }
 
-                // 4) Se richiesto, blocca un pacchetto dell’utente e scala 1
+                // 4) Se possibile, usa un pacchetto
                 $userPackageId = null;
                 $counted = false;
 
                 if ($usePackage) {
-                    // Se passato, deve appartenere al target e avere credito
-                    if ($request->filled('user_package_id')) {
+                    // Se operator/admin hanno scelto esplicitamente un pacchetto, rispettalo.
+                    if ($request->filled('user_package_id') && !$forceAutoPackage) {
                         $pkg = UserPackage::where('id', $request->integer('user_package_id'))
                             ->where('user_id', $targetUserId)
                             ->lockForUpdate()
@@ -99,29 +101,24 @@ class LessonBookingController extends Controller
                             ]);
                         }
                     } else {
-                        // Altrimenti prendi il più vecchio attivo
+                        // Scelta automatica: prendi il PIÙ VECCHIO con credito (>0)
                         $pkg = UserPackage::where('user_id', $targetUserId)
                             ->where('lessons_remaining', '>', 0)
+                            // Se hai expires_at, puoi filtrare: ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at','>=',now()); })
                             ->orderBy('purchased_at')
                             ->lockForUpdate()
                             ->first();
-                        if (!$pkg) {
-                            throw ValidationException::withMessages([
-                                'use_package' => 'Non hai crediti disponibili nei pacchetti.',
-                            ]);
-                        }
                     }
 
-                    if ($pkg->lessons_remaining <= 0) {
-                        throw ValidationException::withMessages([
-                            'use_package' => 'Il pacchetto selezionato non ha crediti disponibili.',
-                        ]);
+                    if (isset($pkg) && $pkg && $pkg->lessons_remaining > 0) {
+                        // Scala 1 credito
+                        $pkg->decrement('lessons_remaining');
+                        $userPackageId = $pkg->id;
+                        $counted = true;
+                    } else {
+                        // Nessun credito disponibile: non blocchiamo l’iscrizione del cliente
+                        // (prenotazione creata con counted=false). Se vuoi bloccare, lancia una ValidationException qui.
                     }
-
-                    // Scala 1 credito
-                    $pkg->decrement('lessons_remaining');
-                    $userPackageId = $pkg->id;
-                    $counted = true;
                 }
 
                 // 5) Crea prenotazione
@@ -147,6 +144,7 @@ class LessonBookingController extends Controller
         return back()->with('status', 'Iscrizione completata.');
     }
 
+
     public function storeManaged(ManagedBookingRequest $request, Lesson $lesson)
     {
         $actor = Auth::user();
@@ -155,19 +153,33 @@ class LessonBookingController extends Controller
             abort(403);
         }
 
+        // ID cliente da aggiungere (obbligatorio nella ManagedBookingRequest)
+        $clientUserId = (int) $request->integer('user_id');
+
+        // 🔧 Nuova logica: auto-selezione pacchetto più vecchio con crediti (>0), se esiste
+        $candidate = \App\Models\UserPackage::where('user_id', $clientUserId)
+            ->where('lessons_remaining', '>', 0)
+            ->orderBy('purchased_at') // più vecchio prima
+            ->first();
+
+        // Se c'è un pacchetto con crediti, lo useremo; altrimenti niente pacchetto
+        $autoUsePackage = (bool) $candidate;
+        $autoUserPackageId = $candidate?->id;
+
         try {
             $booking = $this->bookingService->addBooking(
                 lesson: $lesson,
-                clientUserId: (int) $request->integer('user_id'),
+                clientUserId: $clientUserId,
                 markPaid: (bool) $request->boolean('paid'),
-                usePackage: (bool) $request->boolean('use_package'),
-                userPackageId: $request->input('user_package_id'),
+                // 👉 passiamo la decisione già presa: usa pacchetto se trovato
+                usePackage: $autoUsePackage,
+                userPackageId: $autoUserPackageId,
                 actor: $actor,
                 paidToUserId: $request->input('paid_to_user_id'),
                 lessonPriceOverride: $request->input('lesson_price'),
                 paidAtOverride: $request->input('paid_at')
             );
-        } catch (ValidationException $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->wantsJson()) {
                 return response()->json(['ok' => false, 'errors' => $e->errors()], 422);
             }
@@ -184,6 +196,7 @@ class LessonBookingController extends Controller
 
         return back()->with('status', 'Cliente aggiunto alla lezione.');
     }
+
 
     public function destroy(LessonUser $booking)
     {

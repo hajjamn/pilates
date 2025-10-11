@@ -23,7 +23,7 @@ class DashboardController extends Controller
             ->whereRaw("DATE_ADD(starts_at, INTERVAL 1 HOUR) >= ?", [now()]) // non ancora finita
             ->where('canceled', false)
             ->with(['room'])
-            ->withCount('clients')
+            ->withCount(['clients', 'cashBookingsByPackOwners as red_flag_count'])
             ->orderBy('starts_at')
             ->first();
 
@@ -32,7 +32,7 @@ class DashboardController extends Controller
             ->whereDate('starts_at', $today)
             ->where('starts_at', '>', now())
             ->with(['room'])
-            ->withCount('clients')
+            ->withCount(['clients', 'cashBookingsByPackOwners as red_flag_count'])
             ->orderBy('starts_at')
             ->get();
 
@@ -41,7 +41,7 @@ class DashboardController extends Controller
             ->whereDate('starts_at', $today)
             ->whereRaw("DATE_ADD(starts_at, INTERVAL 1 HOUR) < ?", [now()])
             ->with(['room'])
-            ->withCount('clients')
+            ->withCount(['clients', 'cashBookingsByPackOwners as red_flag_count'])
             ->orderByDesc('starts_at')
             ->get();
 
