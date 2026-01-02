@@ -349,11 +349,23 @@
         </div>
 
         {{-- LISTA LEZIONI --}}
+
+        {{-- Verifica limite lezioni --}}
+        @php
+            $authUser = auth()->user();
+            $isClient = $authUser && $authUser->hasRole('cliente');
+            $canBookMore = !$isClient || $authUser->canBookMoreLessons();
+
+            // opzionale per messaggio
+            $limit = $authUser?->max_active_lesson_bookings ?? 7;
+            $count = $authUser?->future_active_lessons_count ?? 0;
+        @endphp
+
         @if ($mode === 'client')
             <div class="row row-cols-1 row-cols-md-2 g-3">
                 @forelse($lessons as $lesson)
                     <div class="col">
-                        <x-calendar.lesson-card-client :lesson="$lesson" />
+                        <x-calendar.lesson-card-client :lesson="$lesson" :canBookMore="$canBookMore" />
                     </div>
                 @empty
                     <div class="col">
@@ -447,7 +459,7 @@
                             function getSelectedOption(selectEl) {
                                 const v = selectEl.value;
                                 const opt = selectEl.querySelector(
-                                    `option[value="${(window.CSS && CSS.escape) ? CSS.escape(v) : v}"]`) ||
+                                        `option[value="${(window.CSS && CSS.escape) ? CSS.escape(v) : v}"]`) ||
                                     selectEl.options[selectEl.selectedIndex];
                                 return opt || null;
                             }

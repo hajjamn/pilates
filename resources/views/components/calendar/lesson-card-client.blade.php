@@ -1,4 +1,4 @@
-@props(['lesson'])
+@props(['lesson', 'canBookMore' => true])
 
 @php
     use Illuminate\Support\Str;
@@ -118,11 +118,24 @@ $isPast = $lesson->starts_at->isPast();
                 @elseif ($isFull)
                     <button class="btn btn-secondary w-100" disabled>Posti esauriti</button>
                 @else
-                    <button type="button" class="btn my-btn-accent-saffron text-white w-100" data-bs-toggle="modal"
-                        data-bs-target="#bookModal-{{ $lesson->id }}">
-                        Prenotati
-                    </button>
+                    @if (!$canBookMore)
+                        <button type="button" class="btn btn-secondary w-100" disabled
+                            title="Hai raggiunto il numero massimo di lezioni prenotate.">
+                            Limite prenotazioni raggiunto
+                        </button>
+                        <div class="small text-danger mt-1">
+                            Hai già {{ auth()->user()->future_active_lessons_count }}
+                            lezioni prenotate. Limite massimo:
+                            {{ auth()->user()->max_active_lesson_bookings }}.
+                        </div>
+                    @else
+                        <button type="button" class="btn my-btn-accent-saffron text-white w-100" data-bs-toggle="modal"
+                            data-bs-target="#bookModal-{{ $lesson->id }}">
+                            Prenotati
+                        </button>
+                    @endif
                 @endif
+
             @endif
 
             {{-- Nuovo: Dettaglio lezione --}}
@@ -136,7 +149,7 @@ $isPast = $lesson->starts_at->isPast();
 </div>
 
 {{-- MODALE: Conferma iscrizione (solo se prenotabile) --}}
-@if (!$activeBooking && !$isFull && !$isCanceled && !$isPast)
+@if (!$activeBooking && !$isFull && !$isCanceled && !$isPast && $canBookMore)
     {{-- Nessuna scelta pacchetto lato UI: il server consumerà automaticamente i crediti se disponibili --}}
     <div class="modal fade" id="bookModal-{{ $lesson->id }}" tabindex="-1"
         aria-labelledby="bookLabel-{{ $lesson->id }}" aria-hidden="true">
