@@ -111,9 +111,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $query->role('admin');
     }
 
-    // app/Models/User.php
-
-    // app/Models/User.php
     public function setPhoneAttribute($value)
     {
         $raw = trim((string) $value);
@@ -136,6 +133,39 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
+    public function futureActiveLessonsCount(): int
+    {
+        return $this->lessonsAsClient()
+            ->where('lessons.starts_at', '>', now())
+            ->where('lessons.canceled', false)
+            ->count();
+    }
+
+    /**
+     * Accessor: $user->future_active_lessons_count
+     */
+    public function getFutureActiveLessonsCountAttribute(): int
+    {
+        return $this->futureActiveLessonsCount();
+    }
+
+    /**
+     * Helper: true se può ancora prenotare (rispetta il limite configurato)
+     */
+    public function canBookMoreLessons(): bool
+    {
+        $limit = (int) config('booking.max_active_lesson_bookings', 7);
+        return $this->futureActiveLessonsCount() < $limit;
+    }
+
+    /**
+     * Accessor: $user->max_active_lesson_bookings
+     */
+    public function getMaxActiveLessonBookingsAttribute(): int
+    {
+        return (int) config('booking.max_active_lesson_bookings', 7);
     }
 
 }

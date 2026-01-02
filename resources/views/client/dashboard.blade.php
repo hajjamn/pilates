@@ -2,6 +2,19 @@
 @section('page-title', 'Homepage')
 
 @section('content')
+
+    {{-- @php
+        $u = auth()->user();
+        dd([
+            'id' => $u?->id,
+            'roles' => $u?->getRoleNames(),
+            'future_active_lessons_count' => $u?->future_active_lessons_count,
+            'max_active_lesson_bookings' => $u?->max_active_lesson_bookings,
+            'can_book_more_lessons' => $u?->canBookMoreLessons(),
+        ]);
+    @endphp --}}
+
+
     <div class="container mt-4">
 
         <h2 class="h4 text-center">Calendario delle Prenotazioni</h2>
