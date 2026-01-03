@@ -37,12 +37,6 @@ class LessonBookingController extends Controller
 
         $targetUserId = $isClient ? $actor->id : $request->input('user_id', $actor->id);
 
-        //Limite prenotazioni
-        if ($isClient && !$actor->canBookMoreLessons()) {
-            $limit = (int) config('booking.max_active_lesson_bookings', 7);
-            return back()->withErrors("Hai raggiunto il limite massimo di {$limit} lezioni prenotate.");
-        }
-
         // Validazione minima (i campi use_package / user_package_id restano opzionali per operatori/admin)
         $request->merge(['user_id' => $targetUserId]);
         $request->validate([

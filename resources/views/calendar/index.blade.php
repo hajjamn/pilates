@@ -350,22 +350,11 @@
 
         {{-- LISTA LEZIONI --}}
 
-        {{-- Verifica limite lezioni --}}
-        @php
-            $authUser = auth()->user();
-            $isClient = $authUser && $authUser->hasRole('cliente');
-            $canBookMore = !$isClient || $authUser->canBookMoreLessons();
-
-            // opzionale per messaggio
-            $limit = $authUser?->max_active_lesson_bookings ?? 7;
-            $count = $authUser?->future_active_lessons_count ?? 0;
-        @endphp
-
         @if ($mode === 'client')
             <div class="row row-cols-1 row-cols-md-2 g-3">
                 @forelse($lessons as $lesson)
                     <div class="col">
-                        <x-calendar.lesson-card-client :lesson="$lesson" :canBookMore="$canBookMore" />
+                        <x-calendar.lesson-card-client :lesson="$lesson" />
                     </div>
                 @empty
                     <div class="col">
