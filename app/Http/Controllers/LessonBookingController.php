@@ -37,12 +37,6 @@ class LessonBookingController extends Controller
 
         $targetUserId = $isClient ? $actor->id : $request->input('user_id', $actor->id);
 
-        //Limite prenotazioni
-        if ($isClient && !$actor->canBookMoreLessons()) {
-            $limit = (int) config('booking.max_active_lesson_bookings', 7);
-            return back()->withErrors("Hai raggiunto il limite massimo di {$limit} lezioni prenotate.");
-        }
-
         // Validazione minima (i campi use_package / user_package_id restano opzionali per operatori/admin)
         $request->merge(['user_id' => $targetUserId]);
         $request->validate([
@@ -63,7 +57,7 @@ class LessonBookingController extends Controller
             }
         }
 
-        // 👉 Forziamo l’uso automatico del pacchetto SOLO quando l’attore è un cliente
+        // Forziamo l’uso automatico del pacchetto SOLO quando l’attore è un cliente
         //    (operatori/admin mantengono il comportamento da form)
         $forceAutoPackage = $isClient;
         $usePackage = $forceAutoPackage ? true : (bool) $request->boolean('use_package');
@@ -122,8 +116,12 @@ class LessonBookingController extends Controller
                         $userPackageId = $pkg->id;
                         $counted = true;
                     } else {
-                        // Nessun credito disponibile: non blocchiamo l’iscrizione del cliente
-                        // (prenotazione creata con counted=false). Se vuoi bloccare, lancia una ValidationException qui.
+                        //Blocco prenotazione se cliente non ha pacchetti disponibili
+                        if ($forceAutoPackage) {
+                            throw ValidationException::withMessages([
+                                'package' => 'Non hai lezioni disponibili nei pacchetti. Acquista un pacchetto per prenotare.',
+                            ]);
+                        }
                     }
                 }
 
