@@ -55,6 +55,11 @@ $isPast = $lesson->starts_at->isPast();
         }
     }
     $canCancel = (bool) $activeBooking && $workingMinutes >= 6 * 60;
+
+    //Calcolo crediti rimanenti
+    $u = auth()->user();
+    $isClient = $u && $u->hasRole('cliente');
+    $hasCredits = !$isClient || (int) $u->remaining_package_lessons > 0;
 @endphp
 
 <div class="card h-100 shadow-sm my-bg-brand-400">
@@ -118,10 +123,19 @@ $isPast = $lesson->starts_at->isPast();
                 @elseif ($isFull)
                     <button class="btn btn-secondary w-100" disabled>Posti esauriti</button>
                 @else
-                    <button type="button" class="btn my-btn-accent-saffron text-white w-100" data-bs-toggle="modal"
-                        data-bs-target="#bookModal-{{ $lesson->id }}">
-                        Prenotati
-                    </button>
+                    @if (!$hasCredits)
+                        <button class="btn btn-secondary w-100" disabled>
+                            Crediti esauriti
+                        </button>
+                        <div class="small text-danger mt-1">
+                            Non hai lezioni disponibili nei pacchetti.
+                        </div>
+                    @else
+                        <button type="button" class="btn my-btn-accent-saffron text-white w-100" data-bs-toggle="modal"
+                            data-bs-target="#bookModal-{{ $lesson->id }}">
+                            Prenotati
+                        </button>
+                    @endif
                 @endif
 
             @endif
@@ -137,7 +151,7 @@ $isPast = $lesson->starts_at->isPast();
 </div>
 
 {{-- MODALE: Conferma iscrizione (solo se prenotabile) --}}
-@if (!$activeBooking && !$isFull && !$isCanceled && !$isPast && $canBookMore)
+@if (!$activeBooking && !$isFull && !$isCanceled && !$isPast && $hasCredits)
     {{-- Nessuna scelta pacchetto lato UI: il server consumerà automaticamente i crediti se disponibili --}}
     <div class="modal fade" id="bookModal-{{ $lesson->id }}" tabindex="-1"
         aria-labelledby="bookLabel-{{ $lesson->id }}" aria-hidden="true">
